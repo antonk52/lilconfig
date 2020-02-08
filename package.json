@@ -1,16 +1,31 @@
 {
-  "name": "lilconfig",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^13.7.0",
-    "typescript": "^3.7.5"
-  }
+    "name": "lilconfig",
+    "version": "0.0.1",
+    "description": "A tiny replacement to cosmiconfig",
+    "main": "dist/index.js",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build:cjs": "tsc --declaration",
+        "build:esm": "tsc --module ESNext && mv ./dist/index.js ./dist/index.mjs",
+        "prebuild": "npm run clean",
+        "build": "npm run build:esm && npm run build:cjs",
+        "postbuild": "du -h ./dist/*",
+        "clean": "rm -rf ./dist",
+        "test": "echo \"TODO: test for compatibility with cosmiconfig\" && exit 1"
+    },
+    "keywords": [
+        "cosmiconfig",
+        "config",
+        "search"
+    ],
+    "files": [
+        "dist/*"
+    ],
+    "author": "antonk52",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^13.7.0",
+        "typescript": "^3.7.5"
+    }
 }

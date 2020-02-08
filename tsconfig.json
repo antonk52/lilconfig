@@ -10,7 +10,7 @@
         "strict": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "declaration": true,
+        "declaration": false,
 
         "target": "es6",
         "module": "commonjs",

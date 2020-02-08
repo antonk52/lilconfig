@@ -1,41 +1,28 @@
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import util from 'util';
 
-/**
- * lilconfig intended to be a tiny drop in replacement for cosmiconfig
- * without yaml and noExt support
- */
+const fsExistsAsync = util.promisify(fs.exists);
+const fsReadFileAsync = util.promisify(fs.readFile);
 
-type Result = null | {
+export type LilconfigResult = null | {
     path: string;
     config: any;
     isEmpty?: boolean;
     error?: any;
 };
 
-// type LoaderSync = (filepath: string, content: string) => Object | null;
-// type LoaderAsync = (filepath: string, content: string) => Object | null | Promise<Object | null>;
-// type Loader = LoaderAsync | LoaderSync;
-
-type Options = Partial<{
+type Options = {
     stopDir: string;
     searchPlaces: string[];
-    // loaders: Array<[string, Loader]>; // ???
-    // cache: boolean;
-    // transform: (result: Result) => Promise<Result> | Result;
+    transform: (result: LilconfigResult) => LilconfigResult;
     ignoreEmptySearchPlaces: boolean;
-}>;
-
-type SemiResult = {
-    search: (searchFrom?: string) => Result;
-    load: (filepath: string) => Result;
 };
 
 function getDefaultSearchPlaces(name: string): string[] {
     return [
         'package.json',
-        `.${name}rc`,
         `.${name}rc.json`,
         `.${name}rc.js`,
         `${name}.config.js`,
@@ -56,95 +43,222 @@ function getSearchPaths(startDir: string, stopDir: string): string[] {
         ).searchPlaces;
 }
 
-function lilconfig(name: string, options: Options = {}): SemiResult {
-    const {
-        stopDir = os.homedir(),
-        searchPlaces = getDefaultSearchPlaces(name),
-        ignoreEmptySearchPlaces = true,
-    } = options;
+function getOptions(name: string, options?: Partial<Options>): Options {
+    return Object.assign(
+        {
+            stopDir: os.homedir(),
+            searchPlaces: getDefaultSearchPlaces(name),
+            ignoreEmptySearchPlaces: true,
+            transform: (result: LilconfigResult) => result,
+        },
+        options ?? {},
+    );
+}
 
+type SearchItem = {
+    filePath: string;
+    fileName: string;
+};
+
+function getSearchItems(
+    searchPlaces: string[],
+    searchPaths: string[],
+): SearchItem[] {
+    return searchPaths.reduce<SearchItem[]>((acc, searchPath) => {
+        searchPlaces.forEach(fileName => {
+            acc.push({
+                fileName,
+                filePath: path.join(searchPath, fileName),
+            });
+        });
+
+        return acc;
+    }, []);
+}
+
+export function lilconfig(name: string, options: Partial<Options> = {}) {
+    const {
+        ignoreEmptySearchPlaces,
+        searchPlaces,
+        stopDir,
+        transform,
+    } = getOptions(name, options);
 
     return {
-        search: (searchFrom = process.cwd()) => {
+        async search(searchFrom = process.cwd()) {
             const searchPaths = getSearchPaths(searchFrom, stopDir);
 
-            const result: Result = {
+            const result: LilconfigResult = {
                 config: null,
                 path: '',
             };
 
-            let isConfigFound = false;
+            const searchItems = getSearchItems(searchPlaces, searchPaths);
+            for (const {fileName, filePath} of searchItems) {
+                const exists = await fsExistsAsync(filePath);
+                if (!exists) continue;
 
-            for (const location of searchPaths) {
-                if (isConfigFound) break;
-                for (const fileName of searchPlaces) {
-                    if (isConfigFound) break;
-
-                    const filePath = path.join(location, fileName);
-
-                    if (fs.existsSync(filePath)) {
-                    // handle package.json
-                        if (fileName === 'package.json') {
-                            try {
-                                const pkg = require(filePath);
-                                if (name in pkg) {
-                                    result.config = pkg[name];
-                                    result.path = filePath;
-                                    isConfigFound = true;
-                                    break;
-                                }
-                            } catch (err) {}
-
-                            continue;
-                        }
-
-                        // handle other type of configs
-                        const content = fs.readFileSync(filePath).toString();
-                        const isEmpty = !content
-                            .split(os.EOL)
-                            .map(x => x.trim())
-                            .filter(Boolean).length;
-                        if (isEmpty && ignoreEmptySearchPlaces) continue;
-                        try {
-                            result.config = require(filePath);
+                // handle package.json
+                if (fileName === 'package.json') {
+                    try {
+                        const pkg = require(filePath);
+                        if (name in pkg) {
+                            result.config = pkg[name];
                             result.path = filePath;
-                            if (isEmpty) result.isEmpty = isEmpty;
-                        } catch (err) {
-                            result.error = err;
-                            result.config = null;
+                            break;
                         }
-                        isConfigFound = true;
-                        break;
-                    }
+                    } catch (err) {}
+
+                    continue;
                 }
+
+                // handle other type of configs
+                const content = String(await fsReadFileAsync(filePath));
+                const isEmpty = content.trim() === '';
+                if (isEmpty && ignoreEmptySearchPlaces) continue;
+
+                try {
+                    result.config = require(filePath);
+                    result.path = filePath;
+                    if (isEmpty) result.isEmpty = isEmpty;
+                } catch (err) {
+                    result.error = err;
+                    result.config = null;
+                }
+                break;
             }
 
             // not found
-            if (result.path === '' && result.config === null) return null;
+            if (result.path === '' && result.config === null)
+                return transform(null);
 
-            return result;
+            return transform(result);
         },
-        load: filePath => {
-            if (fs.existsSync(filePath)) {
-                const {base} = path.parse(filePath);
+        async load(filePath: string) {
+            const exists = await fsExistsAsync(filePath);
+            if (!exists) return null;
 
-                if (base === 'package.json') {
-                    const pkg = require(filePath);
-                    if (name in pkg) {
-                        return {
-                            config: pkg[name],
-                            path: filePath,
-                        };
-                    }
-                }
+            const {base} = path.parse(filePath);
+
+            if (base === 'package.json') {
+                const pkg = await import(filePath);
+                return transform(
+                    name in pkg
+                        ? {
+                              config: pkg[name],
+                              path: filePath,
+                          }
+                        : null,
+                );
             }
+            const result: LilconfigResult = {
+                config: null,
+                path: filePath,
+            };
+            // handle other type of configs
+            const content = String(await fsReadFileAsync(filePath));
+            const isEmpty = content.trim() === '';
+            if (isEmpty && ignoreEmptySearchPlaces) return transform(null);
 
-            return null;
+            // cosmiconfig returns undefined for empty files
+            result.config = isEmpty ? undefined : await import(filePath);
+
+            return transform(
+                isEmpty ? {...result, isEmpty, config: undefined} : result,
+            );
         },
     };
-
 }
 
-lilconfig('.synd', {stopDir: '/Users/antonk52'}).search();
+export function lilconfigSync(name: string, options: Partial<Options> = {}) {
+    const {
+        ignoreEmptySearchPlaces,
+        searchPlaces,
+        stopDir,
+        transform,
+    } = getOptions(name, options);
 
-export {lilconfig};
+    return {
+        search(searchFrom = process.cwd()) {
+            const searchPaths = getSearchPaths(searchFrom, stopDir);
+
+            const result: LilconfigResult = {
+                config: null,
+                path: '',
+            };
+
+            const searchItems = getSearchItems(searchPlaces, searchPaths);
+            for (const {fileName, filePath} of searchItems) {
+                const exists = fs.existsSync(filePath);
+                if (!exists) continue;
+
+                // handle package.json
+                if (fileName === 'package.json') {
+                    try {
+                        const pkg = require(filePath);
+                        if (name in pkg) {
+                            result.config = pkg[name];
+                            result.path = filePath;
+                            break;
+                        }
+                    } catch (err) {}
+
+                    continue;
+                }
+
+                // handle other type of configs
+                const content = String(fs.readFileSync(filePath));
+                const isEmpty = content.trim() === '';
+                if (isEmpty && ignoreEmptySearchPlaces) continue;
+
+                try {
+                    result.config = require(filePath);
+                    result.path = filePath;
+                    if (isEmpty) result.isEmpty = isEmpty;
+                } catch (err) {
+                    result.error = err;
+                    result.config = null;
+                }
+                break;
+            }
+
+            // not found
+            if (result.path === '' && result.config === null)
+                return transform(null);
+
+            return transform(result);
+        },
+        load(filePath: string): LilconfigResult {
+            if (!fs.existsSync(filePath)) return null;
+
+            const {base} = path.parse(filePath);
+
+            if (base === 'package.json') {
+                const pkg = require(filePath);
+                return transform(
+                    name in pkg
+                        ? {
+                              config: pkg[name],
+                              path: filePath,
+                          }
+                        : null,
+                );
+            }
+            const result: LilconfigResult = {
+                config: null,
+                path: filePath,
+            };
+            // handle other type of configs
+            const content = fs.readFileSync(filePath).toString();
+            const isEmpty = content.trim() === '';
+            if (isEmpty && ignoreEmptySearchPlaces) return transform(null);
+
+            // cosmiconfig returns undefined for empty files
+            result.config = isEmpty ? undefined : require(filePath);
+
+            return transform(
+                isEmpty ? {...result, isEmpty, config: undefined} : result,
+            );
+        },
+    };
+}
