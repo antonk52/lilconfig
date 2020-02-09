@@ -1,4 +1,6 @@
 # Lilconfig ⚙️
+[![npm version](https://badge.fury.io/js/lilconfig.svg)](https://badge.fury.io/js/lilconfig)
+[![install size](https://packagephobia.now.sh/badge?p=lilconfig)](https://packagephobia.now.sh/result?p=lilconfig)
 
 A tiny replacement for [cosmiconfig](https://www.npmjs.com/package/cosmiconfig) with similar API.
 
