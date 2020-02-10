@@ -8,9 +8,10 @@ const fsReadFileAsync = util.promisify(fs.readFile);
 
 export type LilconfigResult = null | {
     path: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     config: any;
     isEmpty?: boolean;
-    error?: any;
+    error?: Error;
 };
 
 type Options = {
