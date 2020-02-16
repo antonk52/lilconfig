@@ -48,12 +48,12 @@ Lilconfig does not intend to be 100% compatible with `cosmiconfig` but tries to 
 
 Options difference between the two.
 
-|Option name             | lilconfig | cosmiconfig|
-|------------------------|-----------|------------|
-|searchPlaces            | +         | +          |
-|loaders                 | -         | +          |
-|packageProp             | -         | +          |
-|stopDir                 | +         | +          |
-|cache                   | -         | +          |
-|transform               | +         | +          |
-|ignoreEmptySearchPlaces | +         | +          |
+|cosmiconfig option name | lilconfig |
+|------------------------|-----------|
+|cache                   | ❌        |
+|loaders                 | ❌        |
+|ignoreEmptySearchPlaces | ✅        |
+|packageProp             | ✅        |
+|searchPlaces            | ✅        |
+|stopDir                 | ✅        |
+|transform               | ✅        |

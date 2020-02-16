@@ -19,6 +19,7 @@ type Options = {
     searchPlaces: string[];
     transform: (result: LilconfigResult) => LilconfigResult;
     ignoreEmptySearchPlaces: boolean;
+    packageProp: string | string[];
 };
 
 function getDefaultSearchPlaces(name: string): string[] {
@@ -51,8 +52,23 @@ function getOptions(name: string, options?: Partial<Options>): Options {
             searchPlaces: getDefaultSearchPlaces(name),
             ignoreEmptySearchPlaces: true,
             transform: (result: LilconfigResult) => result,
+            packageProp: [name],
         },
         options ?? {},
+    );
+}
+
+function getPackageProp(
+    props: string | string[],
+    obj: Record<string, unknown>,
+): unknown {
+    const propsArr = typeof props === 'string' ? props.split('.') : props;
+    return (
+        propsArr.reduce(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (acc: any, prop): unknown => (acc == null ? acc : acc[prop]),
+            obj,
+        ) || null
     );
 }
 
@@ -80,6 +96,7 @@ function getSearchItems(
 export function lilconfig(name: string, options: Partial<Options> = {}) {
     const {
         ignoreEmptySearchPlaces,
+        packageProp,
         searchPlaces,
         stopDir,
         transform,
@@ -103,8 +120,9 @@ export function lilconfig(name: string, options: Partial<Options> = {}) {
                 if (fileName === 'package.json') {
                     try {
                         const pkg = require(filePath);
-                        if (name in pkg) {
-                            result.config = pkg[name];
+                        const maybeConfig = getPackageProp(packageProp, pkg);
+                        if (maybeConfig != null) {
+                            result.config = maybeConfig;
                             result.path = filePath;
                             break;
                         }
@@ -143,14 +161,10 @@ export function lilconfig(name: string, options: Partial<Options> = {}) {
 
             if (base === 'package.json') {
                 const pkg = await import(filePath);
-                return transform(
-                    name in pkg
-                        ? {
-                              config: pkg[name],
-                              path: filePath,
-                          }
-                        : null,
-                );
+                return transform({
+                    config: getPackageProp(packageProp, pkg),
+                    path: filePath,
+                });
             }
             const result: LilconfigResult = {
                 config: null,
@@ -174,6 +188,7 @@ export function lilconfig(name: string, options: Partial<Options> = {}) {
 export function lilconfigSync(name: string, options: Partial<Options> = {}) {
     const {
         ignoreEmptySearchPlaces,
+        packageProp,
         searchPlaces,
         stopDir,
         transform,
@@ -197,8 +212,9 @@ export function lilconfigSync(name: string, options: Partial<Options> = {}) {
                 if (fileName === 'package.json') {
                     try {
                         const pkg = require(filePath);
-                        if (name in pkg) {
-                            result.config = pkg[name];
+                        const maybeConfig = getPackageProp(packageProp, pkg);
+                        if (maybeConfig != null) {
+                            result.config = maybeConfig;
                             result.path = filePath;
                             break;
                         }
@@ -236,14 +252,10 @@ export function lilconfigSync(name: string, options: Partial<Options> = {}) {
 
             if (base === 'package.json') {
                 const pkg = require(filePath);
-                return transform(
-                    name in pkg
-                        ? {
-                              config: pkg[name],
-                              path: filePath,
-                          }
-                        : null,
-                );
+                return transform({
+                    config: getPackageProp(packageProp, pkg),
+                    path: filePath,
+                });
             }
             const result: LilconfigResult = {
                 config: null,
