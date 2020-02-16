@@ -42,16 +42,16 @@ lilconfigSync(
 ```
 
 ## Difference to `cosmiconfig`
-Lilconfig does not intend to be 100% compatible with `cosmiconfig` but tries to mimic it where possible. `lilconfig` does not plan to:
-- support yaml files out of the box
-- cache
+Lilconfig does not intend to be 100% compatible with `cosmiconfig` but tries to mimic it where possible. The key differences are:
+- **not** support yaml files out of the box(`lilconfig` attempts to parse files with no extension as JSON files instead of YAML)
+- **no** cache
 
 Options difference between the two.
 
 |cosmiconfig option name | lilconfig |
 |------------------------|-----------|
 |cache                   | ❌        |
-|loaders                 | ❌        |
+|loaders                 | ✅        |
 |ignoreEmptySearchPlaces | ✅        |
 |packageProp             | ✅        |
 |searchPlaces            | ✅        |
