@@ -11,7 +11,6 @@ export type LilconfigResult = null | {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     config: any;
     isEmpty?: boolean;
-    error?: Error;
 };
 
 interface OptionsBase {
@@ -137,7 +136,7 @@ function getSearchItems(
     }, []);
 }
 
-export function lilconfig(name: string, options: Partial<Options>) {
+export function lilconfig(name: string, options?: Partial<Options>) {
     const {
         ignoreEmptySearchPlaces,
         loaders,
@@ -187,8 +186,8 @@ export function lilconfig(name: string, options: Partial<Options>) {
                     result.path = filePath;
                     if (isEmpty) result.isEmpty = isEmpty;
                 } catch (err) {
-                    result.error = err;
                     result.config = null;
+                    throw new Error(`lol kek ${err}`);
                 }
                 break;
             }
@@ -200,9 +199,6 @@ export function lilconfig(name: string, options: Partial<Options>) {
             return transform(result);
         },
         async load(filePath: string) {
-            const exists = await fsExistsAsync(filePath);
-            if (!exists) return null;
-
             const {base, ext} = path.parse(filePath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
@@ -285,7 +281,6 @@ export function lilconfigSync(name: string, options?: OptionsSync) {
                     result.path = filePath;
                     if (isEmpty) result.isEmpty = isEmpty;
                 } catch (err) {
-                    result.error = err;
                     result.config = null;
                 }
                 break;
@@ -298,8 +293,6 @@ export function lilconfigSync(name: string, options?: OptionsSync) {
             return transform(result);
         },
         load(filePath: string): LilconfigResult {
-            if (!fs.existsSync(filePath)) return null;
-
             const {base, ext} = path.parse(filePath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
