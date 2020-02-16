@@ -14,13 +14,22 @@ export type LilconfigResult = null | {
     error?: Error;
 };
 
-type Options = {
-    stopDir: string;
-    searchPlaces: string[];
-    transform: (result: LilconfigResult) => LilconfigResult;
-    ignoreEmptySearchPlaces: boolean;
-    packageProp: string | string[];
-};
+interface OptionsBase {
+    stopDir?: string;
+    searchPlaces?: string[];
+    ignoreEmptySearchPlaces?: boolean;
+    packageProp?: string | string[];
+}
+
+export interface Options extends OptionsBase {
+    transform?: (
+        result: LilconfigResult,
+    ) => Promise<LilconfigResult> | LilconfigResult;
+}
+
+export interface OptionsSync extends OptionsBase {
+    transform?: (result: LilconfigResult) => LilconfigResult;
+}
 
 function getDefaultSearchPlaces(name: string): string[] {
     return [
@@ -45,13 +54,18 @@ function getSearchPaths(startDir: string, stopDir: string): string[] {
         ).searchPlaces;
 }
 
-function getOptions(name: string, options?: Partial<Options>): Options {
+function getOptions(name: string, options?: OptionsSync): Required<OptionsSync>;
+function getOptions(name: string, options?: Options): Required<Options>;
+function getOptions(
+    name: string,
+    options: Options | OptionsSync = {},
+): Required<Options | OptionsSync> {
     return Object.assign(
         {
             stopDir: os.homedir(),
             searchPlaces: getDefaultSearchPlaces(name),
             ignoreEmptySearchPlaces: true,
-            transform: (result: LilconfigResult) => result,
+            transform: (x: LilconfigResult) => x,
             packageProp: [name],
         },
         options ?? {},
@@ -93,7 +107,7 @@ function getSearchItems(
     }, []);
 }
 
-export function lilconfig(name: string, options: Partial<Options> = {}) {
+export function lilconfig(name: string, options: Partial<Options>) {
     const {
         ignoreEmptySearchPlaces,
         packageProp,
@@ -185,7 +199,7 @@ export function lilconfig(name: string, options: Partial<Options> = {}) {
     };
 }
 
-export function lilconfigSync(name: string, options: Partial<Options> = {}) {
+export function lilconfigSync(name: string, options?: OptionsSync) {
     const {
         ignoreEmptySearchPlaces,
         packageProp,
