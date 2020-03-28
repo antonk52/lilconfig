@@ -92,7 +92,7 @@ function getOptions(
         stopDir: os.homedir(),
         searchPlaces: getDefaultSearchPlaces(name),
         ignoreEmptySearchPlaces: true,
-        transform: (x: LilconfigResult) => x,
+        transform: (x: LilconfigResult): LilconfigResult => x,
         packageProp: [name],
         ...options,
         loaders: {...defaultLoaders, ...options.loaders},
@@ -136,7 +136,15 @@ function getSearchItems(
     }, []);
 }
 
-export function lilconfig(name: string, options?: Partial<Options>) {
+type AsyncSearcher = {
+    search(searchFrom: string): Promise<LilconfigResult>;
+    load(filePath: string): Promise<LilconfigResult>;
+};
+
+export function lilconfig(
+    name: string,
+    options?: Partial<Options>,
+): AsyncSearcher {
     const {
         ignoreEmptySearchPlaces,
         loaders,
@@ -147,7 +155,7 @@ export function lilconfig(name: string, options?: Partial<Options>) {
     } = getOptions(name, options);
 
     return {
-        async search(searchFrom = process.cwd()) {
+        async search(searchFrom = process.cwd()): Promise<LilconfigResult> {
             const searchPaths = getSearchPaths(searchFrom, stopDir);
 
             const result: LilconfigResult = {
@@ -198,7 +206,7 @@ export function lilconfig(name: string, options?: Partial<Options>) {
 
             return transform(result);
         },
-        async load(filePath: string) {
+        async load(filePath: string): Promise<LilconfigResult> {
             const {base, ext} = path.parse(filePath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
@@ -231,7 +239,15 @@ export function lilconfig(name: string, options?: Partial<Options>) {
     };
 }
 
-export function lilconfigSync(name: string, options?: OptionsSync) {
+type SyncSearcher = {
+    search(searchFrom: string): LilconfigResult;
+    load(filePath: string): LilconfigResult;
+};
+
+export function lilconfigSync(
+    name: string,
+    options?: OptionsSync,
+): SyncSearcher {
     const {
         ignoreEmptySearchPlaces,
         loaders,
@@ -242,7 +258,7 @@ export function lilconfigSync(name: string, options?: OptionsSync) {
     } = getOptions(name, options);
 
     return {
-        search(searchFrom = process.cwd()) {
+        search(searchFrom = process.cwd()): LilconfigResult {
             const searchPaths = getSearchPaths(searchFrom, stopDir);
 
             const result: LilconfigResult = {
