@@ -6,10 +6,8 @@
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build:cjs": "tsc --declaration",
-        "build:esm": "tsc --module ESNext && mv ./dist/index.js ./dist/index.mjs",
         "prebuild": "npm run clean",
-        "build": "npm run build:esm && npm run build:cjs",
+        "build": "tsc --declaration",
         "postbuild": "du -h ./dist/*",
         "clean": "rm -rf ./dist",
         "test": "echo \"TODO: test for compatibility with cosmiconfig\" && exit 1",
