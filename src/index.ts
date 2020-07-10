@@ -137,7 +137,7 @@ function getSearchItems(
 }
 
 type AsyncSearcher = {
-    search(searchFrom: string): Promise<LilconfigResult>;
+    search(searchFrom?: string): Promise<LilconfigResult>;
     load(filePath: string): Promise<LilconfigResult>;
 };
 
@@ -240,7 +240,7 @@ export function lilconfig(
 }
 
 type SyncSearcher = {
-    search(searchFrom: string): LilconfigResult;
+    search(searchFrom?: string): LilconfigResult;
     load(filePath: string): LilconfigResult;
 };
 
