@@ -2,7 +2,7 @@
     "compilerOptions": {
         "allowJs": true,
         "alwaysStrict": true,
-        "esModuleInterop": true,
+        "esModuleInterop": false,
         "resolveJsonModule": true,
         "lib": ["es2017"],
         "noFallthroughCasesInSwitch": true,
