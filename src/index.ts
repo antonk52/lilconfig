@@ -1,10 +1,10 @@
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
-import util from 'util';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+import {promisify} from 'util';
 
-const fsExistsAsync = util.promisify(fs.exists);
-const fsReadFileAsync = util.promisify(fs.readFile);
+const fsExistsAsync = promisify(fs.exists);
+const fsReadFileAsync = promisify(fs.readFile);
 
 export type LilconfigResult = null | {
     path: string;
