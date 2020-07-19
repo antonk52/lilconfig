@@ -74,13 +74,13 @@ export const defaultLoaders: LoadersSync = Object.freeze({
         return require(filepath);
     },
     noExt(_, content) {
-        try {
-            return JSON.parse(content);
-        } catch (e) {
-            return null;
-        }
+        return JSON.parse(content);
     },
 });
+
+function getExtDesc(ext: string): string {
+    return ext === 'noExt' ? 'files without extensions' : `extension "${ext}"`;
+}
 
 function getOptions(name: string, options?: OptionsSync): Required<OptionsSync>;
 function getOptions(name: string, options?: Options): Required<Options>;
@@ -88,7 +88,7 @@ function getOptions(
     name: string,
     options: Options | OptionsSync = {},
 ): Required<Options | OptionsSync> {
-    return {
+    const conf: Required<Options> = {
         stopDir: os.homedir(),
         searchPlaces: getDefaultSearchPlaces(name),
         ignoreEmptySearchPlaces: true,
@@ -97,15 +97,35 @@ function getOptions(
         ...options,
         loaders: {...defaultLoaders, ...options.loaders},
     };
+    conf.searchPlaces.forEach(place => {
+        const key = path.extname(place) || 'noExt';
+        const loader = conf.loaders[key];
+        if (!loader) {
+            throw new Error(
+                `No loader specified for ${getExtDesc(
+                    key,
+                )}, so searchPlaces item "${place}" is invalid`,
+            );
+        }
+
+        if (typeof loader !== 'function') {
+            throw new Error(
+                `loader for ${getExtDesc(
+                    key,
+                )} is not a function (type provided: "${typeof loader}"), so searchPlaces item "${place}" is invalid`,
+            );
+        }
+    });
+
+    return conf;
 }
 
 function getPackageProp(
     props: string | string[],
     obj: Record<string, unknown>,
 ): unknown {
-    const propsArr = typeof props === 'string' ? props.split('.') : props;
     return (
-        propsArr.reduce(
+        (Array.isArray(props) ? props : props.split('.')).reduce(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (acc: any, prop): unknown => (acc == null ? acc : acc[prop]),
             obj,
@@ -134,6 +154,10 @@ function getSearchItems(
 
         return acc;
     }, []);
+}
+
+function validateFilePath(filepath: string): void {
+    if (!filepath) throw new Error('load must pass a non-empty string');
 }
 
 function validateLoader(loader: Loader, ext: string): void | never {
@@ -178,15 +202,13 @@ export function lilconfig(
 
                 // handle package.json
                 if (fileName === 'package.json') {
-                    try {
-                        const pkg = loader(filepath, content);
-                        const maybeConfig = getPackageProp(packageProp, pkg);
-                        if (maybeConfig != null) {
-                            result.config = maybeConfig;
-                            result.filepath = filepath;
-                            break;
-                        }
-                    } catch (err) {}
+                    const pkg = loader(filepath, content);
+                    const maybeConfig = getPackageProp(packageProp, pkg);
+                    if (maybeConfig != null) {
+                        result.config = maybeConfig;
+                        result.filepath = filepath;
+                        break;
+                    }
 
                     continue;
                 }
@@ -195,14 +217,14 @@ export function lilconfig(
                 const isEmpty = content.trim() === '';
                 if (isEmpty && ignoreEmptySearchPlaces) continue;
 
-                try {
-                    result.config = require(filepath);
-                    result.filepath = filepath;
-                    if (isEmpty) result.isEmpty = true;
-                } catch (err) {
-                    result.config = null;
-                    throw new Error(`lol kek ${err}`);
+                if (isEmpty) {
+                    result.isEmpty = true;
+                    result.config = undefined;
+                } else {
+                    validateLoader(loader, loaderKey);
+                    result.config = loader(filepath, content);
                 }
+                result.filepath = filepath;
                 break;
             }
 
@@ -213,9 +235,11 @@ export function lilconfig(
             return transform(result);
         },
         async load(filepath: string): Promise<LilconfigResult> {
+            validateFilePath(filepath);
             const {base, ext} = path.parse(filepath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
+            validateLoader(loader, loaderKey);
             const content = String(await fsReadFileAsync(filepath));
 
             if (base === 'package.json') {
@@ -231,7 +255,12 @@ export function lilconfig(
             };
             // handle other type of configs
             const isEmpty = content.trim() === '';
-            if (isEmpty && ignoreEmptySearchPlaces) return transform(null);
+            if (isEmpty && ignoreEmptySearchPlaces)
+                return transform({
+                    config: undefined,
+                    filepath,
+                    isEmpty: true,
+                });
 
             // cosmiconfig returns undefined for empty files
             result.config = isEmpty
@@ -315,10 +344,10 @@ export function lilconfigSync(
             return transform(result);
         },
         load(filepath: string): LilconfigResult {
+            validateFilePath(filepath);
             const {base, ext} = path.parse(filepath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
-
             validateLoader(loader, loaderKey);
 
             const content = String(fs.readFileSync(filepath));
