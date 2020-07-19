@@ -7,7 +7,7 @@ const fsExistsAsync = promisify(fs.exists);
 const fsReadFileAsync = promisify(fs.readFile);
 
 export type LilconfigResult = null | {
-    path: string;
+    filepath: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     config: any;
     isEmpty?: boolean;
@@ -114,7 +114,7 @@ function getPackageProp(
 }
 
 type SearchItem = {
-    filePath: string;
+    filepath: string;
     fileName: string;
     loaderKey: string;
 };
@@ -127,7 +127,7 @@ function getSearchItems(
         searchPlaces.forEach(fileName =>
             acc.push({
                 fileName,
-                filePath: path.join(searchPath, fileName),
+                filepath: path.join(searchPath, fileName),
                 loaderKey: path.extname(fileName) || 'noExt',
             }),
         );
@@ -136,9 +136,15 @@ function getSearchItems(
     }, []);
 }
 
+function validateLoader(loader: Loader, ext: string): void | never {
+    if (!loader) throw new Error(`No loader specified for extension "${ext}"`);
+    if (typeof loader !== 'function')
+        throw new Error('loader is not a function');
+}
+
 type AsyncSearcher = {
     search(searchFrom?: string): Promise<LilconfigResult>;
-    load(filePath: string): Promise<LilconfigResult>;
+    load(filepath: string): Promise<LilconfigResult>;
 };
 
 export function lilconfig(
@@ -160,24 +166,24 @@ export function lilconfig(
 
             const result: LilconfigResult = {
                 config: null,
-                path: '',
+                filepath: '',
             };
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {fileName, filePath, loaderKey} of searchItems) {
-                const exists = await fsExistsAsync(filePath);
+            for (const {fileName, filepath, loaderKey} of searchItems) {
+                const exists = await fsExistsAsync(filepath);
                 if (!exists) continue;
-                const content = String(await fsReadFileAsync(filePath));
+                const content = String(await fsReadFileAsync(filepath));
                 const loader = loaders[loaderKey];
 
                 // handle package.json
                 if (fileName === 'package.json') {
                     try {
-                        const pkg = loader(filePath, content);
+                        const pkg = loader(filepath, content);
                         const maybeConfig = getPackageProp(packageProp, pkg);
                         if (maybeConfig != null) {
                             result.config = maybeConfig;
-                            result.path = filePath;
+                            result.filepath = filepath;
                             break;
                         }
                     } catch (err) {}
@@ -190,9 +196,9 @@ export function lilconfig(
                 if (isEmpty && ignoreEmptySearchPlaces) continue;
 
                 try {
-                    result.config = require(filePath);
-                    result.path = filePath;
-                    if (isEmpty) result.isEmpty = isEmpty;
+                    result.config = require(filepath);
+                    result.filepath = filepath;
+                    if (isEmpty) result.isEmpty = true;
                 } catch (err) {
                     result.config = null;
                     throw new Error(`lol kek ${err}`);
@@ -201,27 +207,27 @@ export function lilconfig(
             }
 
             // not found
-            if (result.path === '' && result.config === null)
+            if (result.filepath === '' && result.config === null)
                 return transform(null);
 
             return transform(result);
         },
-        async load(filePath: string): Promise<LilconfigResult> {
-            const {base, ext} = path.parse(filePath);
+        async load(filepath: string): Promise<LilconfigResult> {
+            const {base, ext} = path.parse(filepath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
-            const content = String(await fsReadFileAsync(filePath));
+            const content = String(await fsReadFileAsync(filepath));
 
             if (base === 'package.json') {
-                const pkg = await loader(filePath, content);
+                const pkg = await loader(filepath, content);
                 return transform({
                     config: getPackageProp(packageProp, pkg),
-                    path: filePath,
+                    filepath,
                 });
             }
             const result: LilconfigResult = {
                 config: null,
-                path: filePath,
+                filepath,
             };
             // handle other type of configs
             const isEmpty = content.trim() === '';
@@ -230,7 +236,7 @@ export function lilconfig(
             // cosmiconfig returns undefined for empty files
             result.config = isEmpty
                 ? undefined
-                : await loader(filePath, content);
+                : await loader(filepath, content);
 
             return transform(
                 isEmpty ? {...result, isEmpty, config: undefined} : result,
@@ -241,7 +247,7 @@ export function lilconfig(
 
 type SyncSearcher = {
     search(searchFrom?: string): LilconfigResult;
-    load(filePath: string): LilconfigResult;
+    load(filepath: string): LilconfigResult;
 };
 
 export function lilconfigSync(
@@ -263,24 +269,23 @@ export function lilconfigSync(
 
             const result: LilconfigResult = {
                 config: null,
-                path: '',
+                filepath: '',
             };
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {fileName, filePath, loaderKey} of searchItems) {
-                const exists = fs.existsSync(filePath);
-                if (!exists) continue;
+            for (const {fileName, filepath, loaderKey} of searchItems) {
+                if (!fs.existsSync(filepath)) continue;
                 const loader = loaders[loaderKey];
-                const content = String(fs.readFileSync(filePath));
+                const content = String(fs.readFileSync(filepath));
 
                 // handle package.json
                 if (fileName === 'package.json') {
                     try {
-                        const pkg = loader(filePath, content);
+                        const pkg = loader(filepath, content);
                         const maybeConfig = getPackageProp(packageProp, pkg);
                         if (maybeConfig != null) {
                             result.config = maybeConfig;
-                            result.path = filePath;
+                            result.filepath = filepath;
                             break;
                         }
                     } catch (err) {}
@@ -292,46 +297,54 @@ export function lilconfigSync(
                 const isEmpty = content.trim() === '';
                 if (isEmpty && ignoreEmptySearchPlaces) continue;
 
-                try {
-                    result.config = loader(filePath, content);
-                    result.path = filePath;
-                    if (isEmpty) result.isEmpty = isEmpty;
-                } catch (err) {
-                    result.config = null;
+                if (isEmpty) {
+                    result.isEmpty = true;
+                    result.config = undefined;
+                } else {
+                    validateLoader(loader, loaderKey);
+                    result.config = loader(filepath, content);
                 }
+                result.filepath = filepath;
                 break;
             }
 
             // not found
-            if (result.path === '' && result.config === null)
+            if (result.filepath === '' && result.config === null)
                 return transform(null);
 
             return transform(result);
         },
-        load(filePath: string): LilconfigResult {
-            const {base, ext} = path.parse(filePath);
+        load(filepath: string): LilconfigResult {
+            const {base, ext} = path.parse(filepath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
 
-            const content = String(fs.readFileSync(filePath));
+            validateLoader(loader, loaderKey);
+
+            const content = String(fs.readFileSync(filepath));
 
             if (base === 'package.json') {
-                const pkg = loader(filePath, content);
+                const pkg = loader(filepath, content);
                 return transform({
                     config: getPackageProp(packageProp, pkg),
-                    path: filePath,
+                    filepath,
                 });
             }
             const result: LilconfigResult = {
                 config: null,
-                path: filePath,
+                filepath,
             };
             // handle other type of configs
             const isEmpty = content.trim() === '';
-            if (isEmpty && ignoreEmptySearchPlaces) return transform(null);
+            if (isEmpty && ignoreEmptySearchPlaces)
+                return transform({
+                    filepath,
+                    config: undefined,
+                    isEmpty: true,
+                });
 
             // cosmiconfig returns undefined for empty files
-            result.config = isEmpty ? undefined : loader(filePath, content);
+            result.config = isEmpty ? undefined : loader(filepath, content);
 
             return transform(
                 isEmpty ? {...result, isEmpty, config: undefined} : result,
