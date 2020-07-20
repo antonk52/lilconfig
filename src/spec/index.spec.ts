@@ -432,12 +432,8 @@ describe('lilconfigSync', () => {
         const dirname = path.join(__dirname, 'search');
 
         it('default for searchFrom', () => {
-            const options = {
-                stopDir: dirname,
-            };
-
-            const result = lilconfigSync('non-existent', options).search();
-            const ccResult = cosmiconfigSync('non-existent', options).search();
+            const result = lilconfigSync('non-existent').search();
+            const ccResult = cosmiconfigSync('non-existent').search();
 
             const expected = null;
 
