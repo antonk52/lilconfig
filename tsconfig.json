@@ -11,6 +11,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "declaration": false,
+        "removeComments": true,
 
         "target": "es2018",
         "module": "commonjs",
