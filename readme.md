@@ -1,6 +1,7 @@
 # Lilconfig ⚙️
 [![npm version](https://badge.fury.io/js/lilconfig.svg)](https://badge.fury.io/js/lilconfig)
 [![install size](https://packagephobia.now.sh/badge?p=lilconfig)](https://packagephobia.now.sh/result?p=lilconfig)
+[![Coverage Status](https://coveralls.io/repos/github/antonk52/lilconfig/badge.svg)](https://coveralls.io/github/antonk52/lilconfig)
 
 A zero-dependency alternative for [cosmiconfig](https://www.npmjs.com/package/cosmiconfig) with the same API.
 
