@@ -605,13 +605,11 @@ describe('lilconfigSync', () => {
             const errMsg = 'loader is not a function';
 
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
+                // @ts-expect-error: unit test is literally for this purpose
                 lilconfigSync('test-app', options).load(filepath);
             }).toThrowError(errMsg);
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
+                // @ts-expect-error: unit test is literally for this purpose
                 cosmiconfigSync('test-app', options).load(filepath);
             }).toThrowError(errMsg);
         });
@@ -624,13 +622,9 @@ describe('lilconfigSync', () => {
             );
 
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
                 lilconfigSync('test-app').load(filepath);
             }).toThrowError('Unexpected token # in JSON at position 2');
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
                 cosmiconfigSync('test-app').load(filepath);
             }).toThrowError(`YAML Error in ${filepath}`);
         });
@@ -671,14 +665,18 @@ describe('lilconfigSync', () => {
                 },
             };
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                lilconfigSync('foo', options);
+                lilconfigSync(
+                    'foo',
+                    // @ts-expect-error: unit test is literally for this purpose
+                    options,
+                );
             }).toThrowError(errMsg);
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                cosmiconfigSync('foo', options);
+                cosmiconfigSync(
+                    'foo',
+                    // @ts-expect-error: unit test is literally for this purpose
+                    options,
+                );
             }).toThrowError(errMsg);
         });
 
@@ -692,14 +690,18 @@ describe('lilconfigSync', () => {
                 },
             };
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                lilconfigSync('foo', options);
+                lilconfigSync(
+                    'foo',
+                    // @ts-expect-error: unit test is literally for this purpose
+                    options,
+                );
             }).toThrowError(errMsg);
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                cosmiconfigSync('foo', options);
+                cosmiconfigSync(
+                    'foo',
+                    // @ts-expect-error: unit test is literally for this purpose
+                    options,
+                );
             }).toThrowError(errMsg);
         });
     });
@@ -950,14 +952,18 @@ describe('lilconfig', () => {
             const errMsg = 'loader is not a function';
 
             expect(
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                lilconfig('test-app', options).load(filepath),
+                lilconfig(
+                    'test-app',
+                    // @ts-expect-error: for unit test purpose
+                    options,
+                ).load(filepath),
             ).rejects.toThrowError(errMsg);
             expect(
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                cosmiconfig('test-app', options).load(filepath),
+                cosmiconfig(
+                    'test-app',
+                    // @ts-expect-error: for unit test purpose
+                    options,
+                ).load(filepath),
             ).rejects.toThrowError(errMsg);
         });
 
@@ -968,16 +974,12 @@ describe('lilconfig', () => {
                 'test-noExt-nonParsable',
             );
 
-            expect(
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                lilconfig('test-app').load(filepath),
-            ).rejects.toThrowError('Unexpected token # in JSON at position 2');
-            expect(
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                cosmiconfig('test-app').load(filepath),
-            ).rejects.toThrowError(`YAML Error in ${filepath}`);
+            expect(lilconfig('test-app').load(filepath)).rejects.toThrowError(
+                'Unexpected token # in JSON at position 2',
+            );
+            expect(cosmiconfig('test-app').load(filepath)).rejects.toThrowError(
+                `YAML Error in ${filepath}`,
+            );
         });
 
         it('throws for empty strings passed to load', async () => {
@@ -1014,14 +1016,18 @@ describe('lilconfig', () => {
                 },
             };
             expect(() =>
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                lilconfig('foo', options),
+                lilconfig(
+                    'foo',
+                    // @ts-expect-error: for unit test purpose
+                    options,
+                ),
             ).toThrowError(errMsg);
             expect(() =>
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                cosmiconfig('foo', options),
+                cosmiconfig(
+                    'foo',
+                    // @ts-expect-error: for unit test purpose
+                    options,
+                ),
             ).toThrowError(errMsg);
         });
 
@@ -1035,14 +1041,18 @@ describe('lilconfig', () => {
                 },
             };
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                lilconfig('foo', options);
+                lilconfig(
+                    'foo',
+                    // @ts-expect-error: for unit test purpose
+                    options,
+                );
             }).toThrowError(errMsg);
             expect(() => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                cosmiconfig('foo', options);
+                cosmiconfig(
+                    'foo',
+                    // @ts-expect-error: for unit test purpose
+                    options,
+                );
             }).toThrowError(errMsg);
         });
     });
@@ -1072,20 +1082,16 @@ describe('npm package api', () => {
         ).toBe(true);
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
-        /* eslint-disable @typescript-eslint/ban-ts-ignore */
         const omitKnownDifferKeys = ({
-            // @ts-ignore
             lilconfig,
-            // @ts-ignore
             lilconfigSync,
-            // @ts-ignore
             cosmiconfig,
-            // @ts-ignore
             cosmiconfigSync,
             ...rest
-        }): object => rest;
+        }: {
+            [key: string]: unknown;
+        }) => rest;
         /* eslint-enable @typescript-eslint/no-unused-vars */
-        /* eslint-enable @typescript-eslint/ban-ts-ignore */
 
         expect(Object.keys(omitKnownDifferKeys(lc))).toEqual(
             Object.keys(omitKnownDifferKeys(cc)),
