@@ -23,3 +23,5 @@ jobs:
       run: npm run build
     - name: check codestyle
       run: npm run lint
+    - name: tests
+      run: npm run test

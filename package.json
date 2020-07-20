@@ -10,7 +10,7 @@
         "build": "tsc --declaration",
         "postbuild": "du -h ./dist/*",
         "clean": "rm -rf ./dist",
-        "test": "echo \"TODO: test for compatibility with cosmiconfig\" && exit 1",
+        "test": "jest --coverage",
         "lint": "eslint ./src/*.ts"
     },
     "keywords": [
