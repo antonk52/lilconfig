@@ -309,15 +309,13 @@ export function lilconfigSync(
 
                 // handle package.json
                 if (fileName === 'package.json') {
-                    try {
-                        const pkg = loader(filepath, content);
-                        const maybeConfig = getPackageProp(packageProp, pkg);
-                        if (maybeConfig != null) {
-                            result.config = maybeConfig;
-                            result.filepath = filepath;
-                            break;
-                        }
-                    } catch (err) {}
+                    const pkg = loader(filepath, content);
+                    const maybeConfig = getPackageProp(packageProp, pkg);
+                    if (maybeConfig != null) {
+                        result.config = maybeConfig;
+                        result.filepath = filepath;
+                        break;
+                    }
 
                     continue;
                 }
