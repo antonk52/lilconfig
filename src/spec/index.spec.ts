@@ -3,117 +3,6 @@ import {lilconfig, lilconfigSync, LoaderSync, TransformSync} from '..';
 import {cosmiconfig, cosmiconfigSync} from 'cosmiconfig';
 import {transpileModule} from 'typescript';
 
-describe('options async', () => {
-    const dirname = path.join(__dirname, 'load');
-
-    describe('ignoreEmptySearchPlaces', () => {
-        it('does not ignore without the option', async () => {
-            const filepath = path.join(dirname, 'test-empty.js');
-            const options = {};
-            const result = await lilconfig('test-app', options).load(filepath);
-            const ccResult = await cosmiconfig('test-app', options).load(
-                filepath,
-            );
-
-            const expected = {
-                config: undefined,
-                filepath,
-                isEmpty: true,
-            };
-
-            expect(result).toEqual(expected);
-            expect(ccResult).toEqual(expected);
-        });
-
-        it('ignores when true', async () => {
-            const filepath = path.join(dirname, 'test-empty.js');
-            const options = {
-                ignoreEmptySearchPlaces: true,
-            };
-            const result = await lilconfig('test-app', options).load(filepath);
-            const ccResult = await cosmiconfig('test-app', options).load(
-                filepath,
-            );
-
-            const expected = {
-                config: undefined,
-                filepath,
-                isEmpty: true,
-            };
-
-            expect(result).toEqual(expected);
-            expect(ccResult).toEqual(expected);
-        });
-
-        it('doesnt ignore when false', async () => {
-            const filepath = path.join(dirname, 'test-empty.js');
-            const options = {
-                ignoreEmptySearchPlaces: false,
-            };
-            const result = await lilconfig('test-app', options).load(filepath);
-            const ccResult = await cosmiconfig('test-app', options).load(
-                filepath,
-            );
-
-            const expected = {config: undefined, filepath, isEmpty: true};
-
-            expect(result).toEqual(expected);
-            expect(ccResult).toEqual(expected);
-        });
-    });
-
-    it('stopDir', async () => {
-        const stopDir = path.join(__dirname, 'search');
-        const searchFrom = path.join(__dirname, 'search', 'a', 'b', 'c');
-
-        const result = await lilconfig('non-existent', {stopDir}).search(
-            searchFrom,
-        );
-        const ccResult = await cosmiconfig('non-existent', {
-            stopDir,
-        }).search(searchFrom);
-
-        const expected = null;
-
-        expect(result).toEqual(expected);
-        expect(ccResult).toEqual(expected);
-    });
-
-    it('searchPlaces', async () => {
-        const stopDir = path.join(__dirname, 'search');
-        const searchFrom = path.join(__dirname, 'search', 'a', 'b', 'c');
-        const searchPlaces = ['searchPlaces.conf.js'];
-
-        const options = {
-            stopDir,
-            searchPlaces,
-        };
-
-        const result = await lilconfig('doesnt-matter', options).search(
-            searchFrom,
-        );
-        const ccResult = await cosmiconfig('doesnt-matter', options).search(
-            searchFrom,
-        );
-
-        const expected = {
-            config: {
-                searchPlacesWorks: true,
-            },
-            filepath: path.join(
-                __dirname,
-                'search',
-                'a',
-                'b',
-                'searchPlaces.conf.js',
-            ),
-        };
-
-        expect(result).toEqual(expected);
-        expect(ccResult).toEqual(expected);
-    });
-});
-
 describe('options', () => {
     const dirname = path.join(__dirname, 'load');
 
@@ -207,58 +96,117 @@ describe('options', () => {
     });
 
     describe('ignoreEmptySearchPlaces', () => {
-        it('does not ignore without the option', () => {
-            const filepath = path.join(dirname, 'test-empty.js');
-            const options = {};
-            const result = lilconfigSync('test-app', options).load(filepath);
-            const ccResult = cosmiconfigSync('test-app', options).load(
-                filepath,
-            );
+        const dirname = path.join(__dirname, 'load');
+        const filepath = path.join(dirname, 'test-empty.js');
 
-            const expected = {
-                config: undefined,
-                filepath,
-                isEmpty: true,
-            };
+        describe('ignores by default', () => {
+            it('sync', () => {
+                const result = lilconfigSync('test-app').load(filepath);
+                const ccResult = cosmiconfigSync('test-app').load(filepath);
 
-            expect(result).toEqual(expected);
-            expect(ccResult).toEqual(expected);
+                const expected = {
+                    config: undefined,
+                    filepath,
+                    isEmpty: true,
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+
+            it('async', async () => {
+                const result = await lilconfig('test-app').load(filepath);
+                const ccResult = await cosmiconfig('test-app').load(filepath);
+
+                const expected = {
+                    config: undefined,
+                    filepath,
+                    isEmpty: true,
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
         });
 
-        it('ignores when true', () => {
-            const filepath = path.join(dirname, 'test-empty.js');
-            const options = {
-                ignoreEmptySearchPlaces: true,
-            };
-            const result = lilconfigSync('test-app', options).load(filepath);
-            const ccResult = cosmiconfigSync('test-app', options).load(
-                filepath,
-            );
+        describe('ignores when true', () => {
+            it('sync', () => {
+                const options = {
+                    ignoreEmptySearchPlaces: true,
+                };
+                const result = lilconfigSync('test-app', options).load(
+                    filepath,
+                );
+                const ccResult = cosmiconfigSync('test-app', options).load(
+                    filepath,
+                );
 
-            const expected = {
-                config: undefined,
-                filepath,
-                isEmpty: true,
-            };
+                const expected = {
+                    config: undefined,
+                    filepath,
+                    isEmpty: true,
+                };
 
-            expect(result).toEqual(expected);
-            expect(ccResult).toEqual(expected);
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+
+            it('async', async () => {
+                const options = {
+                    ignoreEmptySearchPlaces: true,
+                };
+                const result = await lilconfig('test-app', options).load(
+                    filepath,
+                );
+                const ccResult = await cosmiconfig('test-app', options).load(
+                    filepath,
+                );
+
+                const expected = {
+                    config: undefined,
+                    filepath,
+                    isEmpty: true,
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
         });
 
-        it('doesnt ignore when false', () => {
-            const filepath = path.join(dirname, 'test-empty.js');
-            const options = {
-                ignoreEmptySearchPlaces: false,
-            };
-            const result = lilconfigSync('test-app', options).load(filepath);
-            const ccResult = cosmiconfigSync('test-app', options).load(
-                filepath,
-            );
+        describe('doesnt ignore when false', () => {
+            it('sync', () => {
+                const options = {
+                    ignoreEmptySearchPlaces: false,
+                };
+                const result = lilconfigSync('test-app', options).load(
+                    filepath,
+                );
+                const ccResult = cosmiconfigSync('test-app', options).load(
+                    filepath,
+                );
 
-            const expected = {config: undefined, filepath, isEmpty: true};
+                const expected = {config: undefined, filepath, isEmpty: true};
 
-            expect(result).toEqual(expected);
-            expect(ccResult).toEqual(expected);
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+
+            it('async', async () => {
+                const options = {
+                    ignoreEmptySearchPlaces: false,
+                };
+                const result = await lilconfig('test-app', options).load(
+                    filepath,
+                );
+                const ccResult = await cosmiconfig('test-app', options).load(
+                    filepath,
+                );
+
+                const expected = {config: undefined, filepath, isEmpty: true};
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
         });
     });
 
@@ -282,7 +230,7 @@ describe('options', () => {
     it('searchPlaces', () => {
         const stopDir = path.join(__dirname, 'search');
         const searchFrom = path.join(__dirname, 'search', 'a', 'b', 'c');
-        const searchPlaces = ['searchPlaces.conf.js'];
+        const searchPlaces = ['searchPlaces.conf.js', 'searchPlaces-noExt'];
 
         const options = {
             stopDir,
