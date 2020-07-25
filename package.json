@@ -1,9 +1,8 @@
 {
     "name": "lilconfig",
     "version": "0.0.3",
-    "description": "A tiny replacement to cosmiconfig",
+    "description": "A zero-dependency alternative to cosmiconfig",
     "main": "dist/index.js",
-    "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
     "scripts": {
         "prebuild": "npm run clean",
@@ -16,6 +15,7 @@
     "keywords": [
         "cosmiconfig",
         "config",
+        "configuration",
         "search"
     ],
     "files": [
