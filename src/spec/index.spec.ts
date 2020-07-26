@@ -327,7 +327,6 @@ describe('options', () => {
             });
         });
 
-        // TODO think about throwing
         describe('string[] with null in the middle', () => {
             const searchFrom = path.join(__dirname, 'search', 'a', 'b', 'c');
             const options = {
@@ -335,28 +334,59 @@ describe('options', () => {
                 stopDir: path.join(__dirname, 'search'),
             };
             /**
-             * cosmiconfig throws when there is `null` value
-             * in the chain of package prop keys
-             * const ccResult = cosmiconfigSync('foo', options).search(searchFrom);
+             * cosmiconfig throws when there is `null` value in the chain of package prop keys
              */
+
+            it('sync', () => {
+                expect(() => {
+                    lilconfigSync('foo', options).search(searchFrom);
+                }).toThrowError("Cannot read property 'baz' of null");
+                expect(() => {
+                    cosmiconfigSync('foo', options).search(searchFrom);
+                }).toThrowError("Cannot read property 'baz' of null");
+            });
+            it('async', async () => {
+                expect(
+                    lilconfig('foo', options).search(searchFrom),
+                ).rejects.toThrowError("Cannot read property 'baz' of null");
+                expect(
+                    cosmiconfig('foo', options).search(searchFrom),
+                ).rejects.toThrowError("Cannot read property 'baz' of null");
+            });
+        });
+
+        describe('string[] with result', () => {
+            const searchFrom = path.join(__dirname, 'search', 'a', 'b', 'c');
+            const options = {
+                packageProp: 'zoo.foo',
+                stopDir: path.join(__dirname, 'search'),
+            };
             const expected = {
                 config: {
-                    insideBarBaz: true,
+                    insideZooFoo: true,
                 },
                 filepath: path.join(__dirname, 'search', 'a', 'package.json'),
             };
 
             it('sync', () => {
                 const result = lilconfigSync('foo', options).search(searchFrom);
+                const ccResult = cosmiconfigSync('foo', options).search(
+                    searchFrom,
+                );
 
                 expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
             });
             it('async', async () => {
                 const result = await lilconfig('foo', options).search(
                     searchFrom,
                 );
+                const ccResult = await cosmiconfig('foo', options).search(
+                    searchFrom,
+                );
 
                 expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
             });
         });
     });

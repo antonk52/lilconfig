@@ -10,6 +10,10 @@
         "baz": {
             "insideBarBaz": true
         }
+    },
+    "zoo": {
+        "foo": {
+            "insideZooFoo": true
+        }
     }
-
 }

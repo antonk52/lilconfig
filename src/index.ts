@@ -124,10 +124,11 @@ function getPackageProp(
     props: string | string[],
     obj: Record<string, unknown>,
 ): unknown {
+    if (typeof props === 'string' && props in obj) return obj[props];
     return (
         (Array.isArray(props) ? props : props.split('.')).reduce(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (acc: any, prop): unknown => (acc == null ? acc : acc[prop]),
+            (acc: any, prop): unknown => (acc === undefined ? acc : acc[prop]),
             obj,
         ) || null
     );
