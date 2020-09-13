@@ -49,6 +49,8 @@ function getDefaultSearchPlaces(name: string): string[] {
         `.${name}rc.json`,
         `.${name}rc.js`,
         `${name}.config.js`,
+        `.${name}rc.cjs`,
+        `${name}.config.cjs`,
     ];
 }
 
@@ -67,12 +69,9 @@ function getSearchPaths(startDir: string, stopDir: string): string[] {
 }
 
 export const defaultLoaders: LoadersSync = Object.freeze({
-    '.js': filepath => {
-        return require(filepath);
-    },
-    '.json': filepath => {
-        return require(filepath);
-    },
+    '.js': require,
+    '.json': require,
+    '.cjs': require,
     noExt(_, content) {
         return JSON.parse(content);
     },
