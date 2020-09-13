@@ -4,7 +4,7 @@ import * as os from 'os';
 import {promisify} from 'util';
 
 const fsExistsAsync = promisify(fs.exists);
-const fsReadFileAsync = promisify(fs.readFile);
+const fsReadFileAsync = fs.promises.readFile;
 
 export type LilconfigResult = null | {
     filepath: string;
