@@ -85,3 +85,8 @@ lilconfig('myapp', options)
         result // {config, filepath}
     });
 ```
+
+## Version correlation
+
+- lilconig v1 → cosmiconfig v6
+- lilconig v2 → cosmiconfig v7

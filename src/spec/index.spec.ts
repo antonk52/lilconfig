@@ -409,6 +409,20 @@ describe('lilconfigSync', () => {
             expect(result).toEqual(ccResult);
         });
 
+        it('existing cjs file', () => {
+            const filepath = path.join(dirname, 'test-app.cjs');
+            const result = lilconfigSync('test-app').load(filepath);
+            const ccResult = cosmiconfigSync('test-app').load(filepath);
+
+            const expected = {
+                config: {jsTest: true},
+                filepath,
+            };
+
+            expect(result).toEqual(expected);
+            expect(result).toEqual(ccResult);
+        });
+
         it('existing json file', () => {
             const filepath = path.join(dirname, 'test-app.json');
             const result = lilconfigSync('test-app').load(filepath);
@@ -743,6 +757,20 @@ describe('lilconfig', () => {
 
         it('existing js file', async () => {
             const filepath = path.join(dirname, 'test-app.js');
+            const result = await lilconfig('test-app').load(filepath);
+            const ccResult = await cosmiconfig('test-app').load(filepath);
+
+            const expected = {
+                config: {jsTest: true},
+                filepath,
+            };
+
+            expect(result).toEqual(expected);
+            expect(result).toEqual(ccResult);
+        });
+
+        it('existing cjs file', async () => {
+            const filepath = path.join(dirname, 'test-app.cjs');
             const result = await lilconfig('test-app').load(filepath);
             const ccResult = await cosmiconfig('test-app').load(filepath);
 
