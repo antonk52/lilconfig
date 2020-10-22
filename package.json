@@ -21,6 +21,11 @@
     "files": [
         "dist/*"
     ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/antonk52/lilconfig"
+    },
+    "bugs": "https://github.com/antonk52/lilconfig/issues",
     "author": "antonk52",
     "license": "MIT",
     "devDependencies": {
