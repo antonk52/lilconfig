@@ -3,11 +3,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 
 const fsReadFileAsync = fs.promises.readFile;
-const fsExistsAsync = (path: fs.PathLike): Promise<boolean> =>
-    fs.promises
-        .access(path, fs.constants.F_OK)
-        .then(() => true)
-        .catch(() => false);
 
 export type LilconfigResult = null | {
     filepath: string;
@@ -198,8 +193,11 @@ export function lilconfig(
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
             for (const {fileName, filepath, loaderKey} of searchItems) {
-                const exists = await fsExistsAsync(filepath);
-                if (!exists) continue;
+                try {
+                    await fs.promises.access(filepath);
+                } catch {
+                    continue;
+                }
                 const content = String(await fsReadFileAsync(filepath));
                 const loader = loaders[loaderKey];
 
