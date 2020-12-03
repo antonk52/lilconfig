@@ -1,10 +1,12 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import {promisify} from 'util';
 
-const fsExistsAsync = promisify(fs.exists);
 const fsReadFileAsync = fs.promises.readFile;
+const fsExistsAsync = (path: fs.PathLike): Promise<boolean> =>
+  fs.promises.access(path, fs.constants.F_OK)
+    .then(() => true)
+    .catch(() => false);
 
 export type LilconfigResult = null | {
     filepath: string;
