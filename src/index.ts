@@ -4,9 +4,10 @@ import * as os from 'os';
 
 const fsReadFileAsync = fs.promises.readFile;
 const fsExistsAsync = (path: fs.PathLike): Promise<boolean> =>
-  fs.promises.access(path, fs.constants.F_OK)
-    .then(() => true)
-    .catch(() => false);
+    fs.promises
+        .access(path, fs.constants.F_OK)
+        .then(() => true)
+        .catch(() => false);
 
 export type LilconfigResult = null | {
     filepath: string;
