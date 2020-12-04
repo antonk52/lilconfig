@@ -304,7 +304,11 @@ export function lilconfigSync(
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
             for (const {fileName, filepath, loaderKey} of searchItems) {
-                if (!fs.existsSync(filepath)) continue;
+                try {
+                    fs.accessSync(filepath);
+                } catch {
+                    continue;
+                }
                 const loader = loaders[loaderKey];
                 const content = String(fs.readFileSync(filepath));
 
