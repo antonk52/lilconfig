@@ -1,9 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import {promisify} from 'util';
 
-const fsExistsAsync = promisify(fs.exists);
 const fsReadFileAsync = fs.promises.readFile;
 
 export type LilconfigResult = null | {
@@ -195,8 +193,11 @@ export function lilconfig(
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
             for (const {fileName, filepath, loaderKey} of searchItems) {
-                const exists = await fsExistsAsync(filepath);
-                if (!exists) continue;
+                try {
+                    await fs.promises.access(filepath);
+                } catch {
+                    continue;
+                }
                 const content = String(await fsReadFileAsync(filepath));
                 const loader = loaders[loaderKey];
 
@@ -303,7 +304,11 @@ export function lilconfigSync(
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
             for (const {fileName, filepath, loaderKey} of searchItems) {
-                if (!fs.existsSync(filepath)) continue;
+                try {
+                    fs.accessSync(filepath);
+                } catch {
+                    continue;
+                }
                 const loader = loaders[loaderKey];
                 const content = String(fs.readFileSync(filepath));
 
