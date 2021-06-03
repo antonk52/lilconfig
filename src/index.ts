@@ -58,7 +58,14 @@ function getSearchPaths(startDir: string, stopDir: string): string[] {
         .reduceRight<{searchPlaces: string[]; passedStopDir: boolean}>(
             (acc, _, ind, arr) => {
                 const currentPath = arr.slice(0, ind + 1).join(path.sep);
-                if (!acc.passedStopDir) acc.searchPlaces.push(currentPath);
+                /**
+                 * fix #17
+                 * On *nix, if cwd is not under homedir,
+                 * the last path will be '', ('/build' -> '')
+                 * but it should be '/' actually.
+                 * And on Windows, this will never happen. ('C:\build' -> 'C:')
+                 */
+                if (!acc.passedStopDir) acc.searchPlaces.push(currentPath || path.sep);
                 if (currentPath === stopDir) acc.passedStopDir = true;
                 return acc;
             },
