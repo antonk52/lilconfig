@@ -65,7 +65,8 @@ function getSearchPaths(startDir: string, stopDir: string): string[] {
                  * but it should be '/' actually.
                  * And on Windows, this will never happen. ('C:\build' -> 'C:')
                  */
-                if (!acc.passedStopDir) acc.searchPlaces.push(currentPath || path.sep);
+                if (!acc.passedStopDir)
+                    acc.searchPlaces.push(currentPath || path.sep);
                 if (currentPath === stopDir) acc.passedStopDir = true;
                 return acc;
             },

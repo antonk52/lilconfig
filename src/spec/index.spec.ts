@@ -1,7 +1,32 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import {lilconfig, lilconfigSync, LoaderSync, TransformSync} from '..';
 import {cosmiconfig, cosmiconfigSync} from 'cosmiconfig';
 import {transpileModule} from 'typescript';
+
+/**
+ * Mocking fs solely to test the root directory filepath
+ */
+jest.mock('fs', () => {
+    const fs = jest.requireActual<typeof import('fs')>('fs');
+
+    return {
+        ...fs,
+        promises: {
+            ...fs.promises,
+            access: jest.fn((pth: string) => {
+                return fs.promises.access(pth);
+            }),
+        },
+        accessSync: jest.fn((...args: Parameters<typeof fs.accessSync>) => {
+            return fs.accessSync(...args);
+        }),
+    };
+});
+
+beforeEach(() => {
+    jest.clearAllMocks();
+});
 
 describe('options', () => {
     const dirname = path.join(__dirname, 'load');
@@ -485,6 +510,32 @@ describe('lilconfigSync', () => {
             expect(ccResult).toEqual(expected);
         });
 
+        if (process.platform !== 'win32') {
+            it('default for searchFrom till root directory', () => {
+                const options = {stopDir: '/'};
+                const result = lilconfigSync('non-existent', options).search();
+                expect(
+                    (fs.accessSync as jest.Mock).mock.calls.slice(-6),
+                ).toEqual([
+                    ['/package.json'],
+                    ['/.non-existentrc.json'],
+                    ['/.non-existentrc.js'],
+                    ['/non-existent.config.js'],
+                    ['/.non-existentrc.cjs'],
+                    ['/non-existent.config.cjs'],
+                ]);
+                const ccResult = cosmiconfigSync(
+                    'non-existent',
+                    options,
+                ).search();
+
+                const expected = null;
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+        }
+
         it('provided searchFrom', () => {
             const searchFrom = path.join(dirname, 'a', 'b', 'c');
 
@@ -844,6 +895,35 @@ describe('lilconfig', () => {
             expect(result).toEqual(expected);
             expect(ccResult).toEqual(expected);
         });
+
+        if (process.platform !== 'win32') {
+            it('searches root directory correctly', async () => {
+                const options = {stopDir: '/'};
+                const result = await lilconfig(
+                    'non-existent',
+                    options,
+                ).search();
+                expect(
+                    (fs.promises.access as jest.Mock).mock.calls.slice(-6),
+                ).toEqual([
+                    ['/package.json'],
+                    ['/.non-existentrc.json'],
+                    ['/.non-existentrc.js'],
+                    ['/non-existent.config.js'],
+                    ['/.non-existentrc.cjs'],
+                    ['/non-existent.config.cjs'],
+                ]);
+                const ccResult = await cosmiconfig(
+                    'non-existent',
+                    options,
+                ).search();
+
+                const expected = null;
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+        }
 
         it('provided searchFrom', async () => {
             const searchFrom = path.join(dirname, 'a', 'b', 'c');
