@@ -39,6 +39,7 @@ describe('options', () => {
 
         describe('ts-loader', () => {
             const filepath = path.join(dirname, 'test-app.ts');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const options = {
                 loaders: {
                     '.ts': tsLoader,
@@ -53,10 +54,10 @@ describe('options', () => {
 
             it('sync', () => {
                 const result = lilconfigSync('test-app', options).load(
-                    filepath,
+                    relativeFilepath,
                 );
                 const ccResult = cosmiconfigSync('test-app', options).load(
-                    filepath,
+                    relativeFilepath,
                 );
 
                 expect(result).toEqual(expected);
@@ -65,10 +66,10 @@ describe('options', () => {
 
             it('async', async () => {
                 const result = await lilconfig('test-app', options).load(
-                    filepath,
+                    relativeFilepath,
                 );
                 const ccResult = await cosmiconfig('test-app', options).load(
-                    filepath,
+                    relativeFilepath,
                 );
 
                 expect(result).toEqual(expected);
@@ -89,6 +90,7 @@ describe('options', () => {
             };
         };
         const filepath = path.join(dirname, 'test-app.js');
+        const relativeFilepath = filepath.slice(process.cwd().length + 1);
         const options = {
             transform,
         };
@@ -101,18 +103,18 @@ describe('options', () => {
         };
 
         it('sync', () => {
-            const result = lilconfigSync('test-app', options).load(filepath);
+            const result = lilconfigSync('test-app', options).load(relativeFilepath);
             const ccResult = cosmiconfigSync('test-app', options).load(
-                filepath,
+                relativeFilepath,
             );
 
             expect(result).toEqual(expected);
             expect(ccResult).toEqual(expected);
         });
         it('async', async () => {
-            const result = await lilconfig('test-app', options).load(filepath);
+            const result = await lilconfig('test-app', options).load(relativeFilepath);
             const ccResult = await cosmiconfig('test-app', options).load(
-                filepath,
+                relativeFilepath,
             );
 
             expect(result).toEqual(expected);
@@ -123,11 +125,12 @@ describe('options', () => {
     describe('ignoreEmptySearchPlaces', () => {
         const dirname = path.join(__dirname, 'load');
         const filepath = path.join(dirname, 'test-empty.js');
+        const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
         describe('ignores by default', () => {
             it('sync', () => {
-                const result = lilconfigSync('test-app').load(filepath);
-                const ccResult = cosmiconfigSync('test-app').load(filepath);
+                const result = lilconfigSync('test-app').load(relativeFilepath);
+                const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
 
                 const expected = {
                     config: undefined,
@@ -140,8 +143,8 @@ describe('options', () => {
             });
 
             it('async', async () => {
-                const result = await lilconfig('test-app').load(filepath);
-                const ccResult = await cosmiconfig('test-app').load(filepath);
+                const result = await lilconfig('test-app').load(relativeFilepath);
+                const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
 
                 const expected = {
                     config: undefined,
@@ -291,6 +294,7 @@ describe('options', () => {
             const dirname = path.join(__dirname, 'load');
             const options = {packageProp: 'foo'};
             const filepath = path.join(dirname, 'package.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const expected = {
                 config: {
                     insideFoo: true,
@@ -299,16 +303,16 @@ describe('options', () => {
             };
 
             it('sync', () => {
-                const result = lilconfigSync('foo', options).load(filepath);
-                const ccResult = cosmiconfigSync('foo', options).load(filepath);
+                const result = lilconfigSync('foo', options).load(relativeFilepath);
+                const ccResult = cosmiconfigSync('foo', options).load(relativeFilepath);
 
                 expect(result).toEqual(expected);
                 expect(ccResult).toEqual(expected);
             });
             it('async', async () => {
-                const result = await lilconfig('foo', options).load(filepath);
+                const result = await lilconfig('foo', options).load(relativeFilepath);
                 const ccResult = await cosmiconfig('foo', options).load(
-                    filepath,
+                    relativeFilepath,
                 );
 
                 expect(result).toEqual(expected);
@@ -323,6 +327,7 @@ describe('options', () => {
                 'a',
                 'package.json',
             );
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const options = {
                 packageProp: 'bar.baz',
                 stopDir: path.join(__dirname, 'search'),
@@ -335,16 +340,16 @@ describe('options', () => {
             };
 
             it('sync', () => {
-                const result = lilconfigSync('foo', options).load(filepath);
-                const ccResult = cosmiconfigSync('foo', options).load(filepath);
+                const result = lilconfigSync('foo', options).load(relativeFilepath);
+                const ccResult = cosmiconfigSync('foo', options).load(relativeFilepath);
 
                 expect(result).toEqual(expected);
                 expect(ccResult).toEqual(expected);
             });
             it('async', async () => {
-                const result = await lilconfig('foo', options).load(filepath);
+                const result = await lilconfig('foo', options).load(relativeFilepath);
                 const ccResult = await cosmiconfig('foo', options).load(
-                    filepath,
+                    relativeFilepath,
                 );
 
                 expect(result).toEqual(expected);
@@ -422,8 +427,10 @@ describe('lilconfigSync', () => {
 
         it('existing js file', () => {
             const filepath = path.join(dirname, 'test-app.js');
-            const result = lilconfigSync('test-app').load(filepath);
-            const ccResult = cosmiconfigSync('test-app').load(filepath);
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+
+            const result = lilconfigSync('test-app').load(relativeFilepath);
+            const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsTest: true},
@@ -436,8 +443,10 @@ describe('lilconfigSync', () => {
 
         it('existing cjs file', () => {
             const filepath = path.join(dirname, 'test-app.cjs');
-            const result = lilconfigSync('test-app').load(filepath);
-            const ccResult = cosmiconfigSync('test-app').load(filepath);
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+
+            const result = lilconfigSync('test-app').load(relativeFilepath);
+            const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsTest: true},
@@ -450,8 +459,10 @@ describe('lilconfigSync', () => {
 
         it('existing json file', () => {
             const filepath = path.join(dirname, 'test-app.json');
-            const result = lilconfigSync('test-app').load(filepath);
-            const ccResult = cosmiconfigSync('test-app').load(filepath);
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+
+            const result = lilconfigSync('test-app').load(relativeFilepath);
+            const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsonTest: true},
@@ -464,9 +475,10 @@ describe('lilconfigSync', () => {
 
         it('no extension json file', () => {
             const filepath = path.join(dirname, 'test-noExt-json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
-            const result = lilconfigSync('test-app').load(filepath);
-            const ccResult = cosmiconfigSync('test-app').load(filepath);
+            const result = lilconfigSync('test-app').load(relativeFilepath);
+            const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {noExtJsonFile: true},
@@ -479,10 +491,12 @@ describe('lilconfigSync', () => {
 
         it('package.json', () => {
             const filepath = path.join(dirname, 'package.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+
             const options = {};
-            const result = lilconfigSync('test-app', options).load(filepath);
+            const result = lilconfigSync('test-app', options).load(relativeFilepath);
             const ccResult = cosmiconfigSync('test-app', options).load(
-                filepath,
+                relativeFilepath,
             );
 
             const expected = {
@@ -633,15 +647,16 @@ describe('lilconfigSync', () => {
         it('non existing file', () => {
             const dirname = path.join(__dirname, 'load');
             const filepath = path.join(dirname, 'nope.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             expect(() => {
-                lilconfigSync('test-app').load(filepath);
+                lilconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(
                 `ENOENT: no such file or directory, open '${filepath}'`,
             );
 
             expect(() => {
-                cosmiconfigSync('test-app').load(filepath);
+                cosmiconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(
                 `ENOENT: no such file or directory, open '${filepath}'`,
             );
@@ -650,47 +665,51 @@ describe('lilconfigSync', () => {
         it('throws for invalid json', () => {
             const dirname = path.join(__dirname, 'load');
             const filepath = path.join(dirname, 'test-invalid.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             /**
              * throws but less elegant
              */
             expect(() => {
-                lilconfigSync('test-app').load(filepath);
+                lilconfigSync('test-app').load(relativeFilepath);
             }).toThrowError('Unexpected token / in JSON at position 22');
 
             expect(() => {
-                cosmiconfigSync('test-app').load(filepath);
+                cosmiconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(`JSON Error in ${filepath}:`);
         });
 
         it('throws for provided filepath that does not exist', () => {
             const dirname = path.join(__dirname, 'load');
             const filepath = path.join(dirname, 'i-do-no-exist.js');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const errMsg = `ENOENT: no such file or directory, open '${filepath}'`;
 
             expect(() => {
-                lilconfigSync('test-app', {}).load(filepath);
+                lilconfigSync('test-app', {}).load(relativeFilepath);
             }).toThrowError(errMsg);
             expect(() => {
-                cosmiconfigSync('test-app', {}).load(filepath);
+                cosmiconfigSync('test-app', {}).load(relativeFilepath);
             }).toThrowError(errMsg);
         });
 
         it('no loader specified for the search place', () => {
             const filepath = path.join(__dirname, 'load', 'config.coffee');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             const errMsg = 'No loader specified for extension ".coffee"';
 
             expect(() => {
-                lilconfigSync('test-app').load(filepath);
+                lilconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(errMsg);
             expect(() => {
-                cosmiconfigSync('test-app').load(filepath);
+                cosmiconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(errMsg);
         });
 
         it('loader is not a function', () => {
             const filepath = path.join(__dirname, 'load', 'config.coffee');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const options = {
                 loaders: {
                     '.coffee': true,
@@ -701,11 +720,11 @@ describe('lilconfigSync', () => {
 
             expect(() => {
                 // @ts-expect-error: unit test is literally for this purpose
-                lilconfigSync('test-app', options).load(filepath);
+                lilconfigSync('test-app', options).load(relativeFilepath);
             }).toThrowError(errMsg);
             expect(() => {
                 // @ts-expect-error: unit test is literally for this purpose
-                cosmiconfigSync('test-app', options).load(filepath);
+                cosmiconfigSync('test-app', options).load(relativeFilepath);
             }).toThrowError(errMsg);
         });
 
@@ -715,12 +734,13 @@ describe('lilconfigSync', () => {
                 'load',
                 'test-noExt-nonParsable',
             );
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             expect(() => {
-                lilconfigSync('test-app').load(filepath);
+                lilconfigSync('test-app').load(relativeFilepath);
             }).toThrowError('Unexpected token # in JSON at position 2');
             expect(() => {
-                cosmiconfigSync('test-app').load(filepath);
+                cosmiconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(`YAML Error in ${filepath}`);
         });
 
@@ -808,8 +828,9 @@ describe('lilconfig', () => {
 
         it('existing js file', async () => {
             const filepath = path.join(dirname, 'test-app.js');
-            const result = await lilconfig('test-app').load(filepath);
-            const ccResult = await cosmiconfig('test-app').load(filepath);
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+            const result = await lilconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsTest: true},
@@ -822,8 +843,9 @@ describe('lilconfig', () => {
 
         it('existing cjs file', async () => {
             const filepath = path.join(dirname, 'test-app.cjs');
-            const result = await lilconfig('test-app').load(filepath);
-            const ccResult = await cosmiconfig('test-app').load(filepath);
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+            const result = await lilconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsTest: true},
@@ -836,8 +858,9 @@ describe('lilconfig', () => {
 
         it('existing json file', async () => {
             const filepath = path.join(dirname, 'test-app.json');
-            const result = await lilconfig('test-app').load(filepath);
-            const ccResult = await cosmiconfig('test-app').load(filepath);
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+            const result = await lilconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsonTest: true},
@@ -850,9 +873,10 @@ describe('lilconfig', () => {
 
         it('no extension json file', async () => {
             const filepath = path.join(dirname, 'test-noExt-json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
-            const result = await lilconfig('test-app').load(filepath);
-            const ccResult = await cosmiconfig('test-app').load(filepath);
+            const result = await lilconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {noExtJsonFile: true},
@@ -865,10 +889,11 @@ describe('lilconfig', () => {
 
         it('package.json', async () => {
             const filepath = path.join(dirname, 'package.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const options = {};
-            const result = await lilconfig('test-app', options).load(filepath);
+            const result = await lilconfig('test-app', options).load(relativeFilepath);
             const ccResult = await cosmiconfig('test-app', options).load(
-                filepath,
+                relativeFilepath,
             );
 
             const expected = {
@@ -1025,14 +1050,15 @@ describe('lilconfig', () => {
         it('non existing file', async () => {
             const dirname = path.join(__dirname, 'load');
             const filepath = path.join(dirname, 'nope.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             const errMsg = `ENOENT: no such file or directory, open '${filepath}'`;
 
-            expect(lilconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 errMsg,
             );
 
-            expect(cosmiconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 errMsg,
             );
         });
@@ -1040,15 +1066,16 @@ describe('lilconfig', () => {
         it('throws for invalid json', async () => {
             const dirname = path.join(__dirname, 'load');
             const filepath = path.join(dirname, 'test-invalid.json');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             /**
              * throws but less elegant
              */
-            expect(lilconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 "Cannot read property 'JSON' of null",
             );
 
-            expect(cosmiconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 `JSON Error in ${filepath}:`,
             );
         });
@@ -1056,31 +1083,34 @@ describe('lilconfig', () => {
         it('throws for provided filepath that does not exist', async () => {
             const dirname = path.join(__dirname, 'load');
             const filepath = path.join(dirname, 'i-do-no-exist.js');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const errMsg = `ENOENT: no such file or directory, open '${filepath}'`;
 
             expect(
-                lilconfig('test-app', {}).load(filepath),
+                lilconfig('test-app', {}).load(relativeFilepath),
             ).rejects.toThrowError(errMsg);
             expect(
-                cosmiconfig('test-app', {}).load(filepath),
+                cosmiconfig('test-app', {}).load(relativeFilepath),
             ).rejects.toThrowError(errMsg);
         });
 
         it('no loader specified for the search place', async () => {
             const filepath = path.join(__dirname, 'load', 'config.coffee');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             const errMsg = 'No loader specified for extension ".coffee"';
 
-            expect(lilconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 errMsg,
             );
-            expect(cosmiconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 errMsg,
             );
         });
 
         it('loader is not a function', async () => {
             const filepath = path.join(__dirname, 'load', 'config.coffee');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const options = {
                 loaders: {
                     '.coffee': true,
@@ -1094,14 +1124,14 @@ describe('lilconfig', () => {
                     'test-app',
                     // @ts-expect-error: for unit test purpose
                     options,
-                ).load(filepath),
+                ).load(relativeFilepath),
             ).rejects.toThrowError(errMsg);
             expect(
                 cosmiconfig(
                     'test-app',
                     // @ts-expect-error: for unit test purpose
                     options,
-                ).load(filepath),
+                ).load(relativeFilepath),
             ).rejects.toThrowError(errMsg);
         });
 
@@ -1111,11 +1141,12 @@ describe('lilconfig', () => {
                 'load',
                 'test-noExt-nonParsable',
             );
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
-            expect(lilconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 'Unexpected token # in JSON at position 2',
             );
-            expect(cosmiconfig('test-app').load(filepath)).rejects.toThrowError(
+            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 `YAML Error in ${filepath}`,
             );
         });
