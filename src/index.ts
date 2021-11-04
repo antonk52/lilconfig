@@ -245,36 +245,37 @@ export function lilconfig(
         },
         async load(filepath: string): Promise<LilconfigResult> {
             validateFilePath(filepath);
-            const {base, ext} = path.parse(filepath);
+            const absPath = path.resolve(process.cwd(), filepath);
+            const {base, ext} = path.parse(absPath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
             validateLoader(loader, loaderKey);
-            const content = String(await fsReadFileAsync(filepath));
+            const content = String(await fsReadFileAsync(absPath));
 
             if (base === 'package.json') {
-                const pkg = await loader(filepath, content);
+                const pkg = await loader(absPath, content);
                 return transform({
                     config: getPackageProp(packageProp, pkg),
-                    filepath,
+                    filepath: absPath,
                 });
             }
             const result: LilconfigResult = {
                 config: null,
-                filepath,
+                filepath: absPath,
             };
             // handle other type of configs
             const isEmpty = content.trim() === '';
             if (isEmpty && ignoreEmptySearchPlaces)
                 return transform({
                     config: undefined,
-                    filepath,
+                    filepath: absPath,
                     isEmpty: true,
                 });
 
             // cosmiconfig returns undefined for empty files
             result.config = isEmpty
                 ? undefined
-                : await loader(filepath, content);
+                : await loader(absPath, content);
 
             return transform(
                 isEmpty ? {...result, isEmpty, config: undefined} : result,
@@ -356,35 +357,36 @@ export function lilconfigSync(
         },
         load(filepath: string): LilconfigResult {
             validateFilePath(filepath);
-            const {base, ext} = path.parse(filepath);
+            const absPath = path.resolve(process.cwd(), filepath);
+            const {base, ext} = path.parse(absPath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
             validateLoader(loader, loaderKey);
 
-            const content = String(fs.readFileSync(filepath));
+            const content = String(fs.readFileSync(absPath));
 
             if (base === 'package.json') {
-                const pkg = loader(filepath, content);
+                const pkg = loader(absPath, content);
                 return transform({
                     config: getPackageProp(packageProp, pkg),
-                    filepath,
+                    filepath: absPath,
                 });
             }
             const result: LilconfigResult = {
                 config: null,
-                filepath,
+                filepath: absPath,
             };
             // handle other type of configs
             const isEmpty = content.trim() === '';
             if (isEmpty && ignoreEmptySearchPlaces)
                 return transform({
-                    filepath,
+                    filepath: absPath,
                     config: undefined,
                     isEmpty: true,
                 });
 
             // cosmiconfig returns undefined for empty files
-            result.config = isEmpty ? undefined : loader(filepath, content);
+            result.config = isEmpty ? undefined : loader(absPath, content);
 
             return transform(
                 isEmpty ? {...result, isEmpty, config: undefined} : result,
