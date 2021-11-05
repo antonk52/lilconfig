@@ -22,6 +22,7 @@ jobs:
     - name: build
       run: npm run build
     - name: check codestyle
+      if: matrix.node-version != '10.x'
       run: npm run lint
     - name: tests
       run: npm run test
