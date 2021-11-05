@@ -367,21 +367,25 @@ describe('options', () => {
              * cosmiconfig throws when there is `null` value in the chain of package prop keys
              */
 
+             const expectedMessage = parseInt(process.version.slice(1), 10) > 14
+                ? "Cannot read properties of null (reading 'baz')"
+                : "Cannot read property 'baz' of null"
+
             it('sync', () => {
                 expect(() => {
                     lilconfigSync('foo', options).search(searchFrom);
-                }).toThrowError("Cannot read property 'baz' of null");
+                }).toThrowError(expectedMessage);
                 expect(() => {
                     cosmiconfigSync('foo', options).search(searchFrom);
-                }).toThrowError("Cannot read property 'baz' of null");
+                }).toThrowError(expectedMessage);
             });
             it('async', async () => {
                 expect(
                     lilconfig('foo', options).search(searchFrom),
-                ).rejects.toThrowError("Cannot read property 'baz' of null");
+                ).rejects.toThrowError(expectedMessage);
                 expect(
                     cosmiconfig('foo', options).search(searchFrom),
-                ).rejects.toThrowError("Cannot read property 'baz' of null");
+                ).rejects.toThrowError(expectedMessage);
             });
         });
 
