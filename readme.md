@@ -67,15 +67,16 @@ If you need the YAML support you can provide your own loader
 import {lilconig} from 'lilconfig';
 import yaml from 'yaml';
 
+function loadYaml(filepath, content) {
+    return yaml.parse(content);
+}
+
 const options = {
     loaders: {
-        '.yaml': (filepath, content) => {
-            return yaml.parse(content);
-        },
+        '.yaml': loadYaml,
+        '.yml': loadYaml,
         // loader for files with no extension
-        noExt: (filepath, content) => {
-            return yaml.parse(content);
-        }
+        noExt: loadYaml
     }
 };
 
