@@ -1072,7 +1072,7 @@ describe('lilconfig', () => {
              * throws but less elegant
              */
             expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                "Cannot read property 'JSON' of null",
+                "Unexpected token / in JSON at position 22",
             );
 
             expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
@@ -1143,10 +1143,10 @@ describe('lilconfig', () => {
             );
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
-            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
+            await expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 'Unexpected token # in JSON at position 2',
             );
-            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
+            await expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
                 `YAML Error in ${filepath}`,
             );
         });
