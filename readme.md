@@ -64,7 +64,7 @@ Lilconfig does not intend to be 100% compatible with `cosmiconfig` but tries to 
 If you need the YAML support you can provide your own loader
 
 ```js
-import {lilconig} from 'lilconfig';
+import {lilconfig} from 'lilconfig';
 import yaml from 'yaml';
 
 function loadYaml(filepath, content) {
