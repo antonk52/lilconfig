@@ -76,6 +76,42 @@ describe('options', () => {
                 expect(ccResult).toEqual(expected);
             });
         });
+
+        describe('async loaders', () => {
+            const config = {data: 42};
+            const options = {
+                loaders: {'.js': async () => config},
+            };
+
+            it('async load', async () => {
+                const filepath = path.join(__dirname, 'load', 'test-app.js');
+
+                const result = await lilconfig('test-app', options).load(
+                    filepath,
+                );
+                const ccResult = await cosmiconfig('test-app', options).load(
+                    filepath,
+                );
+
+                expect(result).toEqual({config, filepath});
+                expect(ccResult).toEqual({config, filepath});
+            });
+
+            it('async search', async () => {
+                const searchPath = path.join(__dirname, 'search');
+                const filepath = path.join(searchPath, 'test-app.config.js');
+
+                const result = await lilconfig('test-app', options).search(
+                    searchPath,
+                );
+                const ccResult = await cosmiconfig('test-app', options).search(
+                    searchPath,
+                );
+
+                expect(result).toEqual({config, filepath});
+                expect(ccResult).toEqual({config, filepath});
+            });
+        });
     });
 
     describe('transform', () => {

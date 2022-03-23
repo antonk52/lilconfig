@@ -211,7 +211,7 @@ export function lilconfig(
 
                 // handle package.json
                 if (fileName === 'package.json') {
-                    const pkg = loader(filepath, content);
+                    const pkg = await loader(filepath, content);
                     const maybeConfig = getPackageProp(packageProp, pkg);
                     if (maybeConfig != null) {
                         result.config = maybeConfig;
@@ -231,7 +231,7 @@ export function lilconfig(
                     result.config = undefined;
                 } else {
                     validateLoader(loader, loaderKey);
-                    result.config = loader(filepath, content);
+                    result.config = await loader(filepath, content);
                 }
                 result.filepath = filepath;
                 break;
