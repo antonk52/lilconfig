@@ -569,13 +569,17 @@ describe('lilconfigSync', () => {
                 const options = {stopDir: '/'};
                 const result = lilconfigSync('non-existent', options).search();
                 expect(
-                    (fs.accessSync as jest.Mock).mock.calls.slice(-6),
+                    (fs.accessSync as jest.Mock).mock.calls.slice(-10),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
-                    ['/non-existent.config.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.config/non-existentrc'],
+                    ['/.config/non-existentrc.json'],
+                    ['/.config/non-existentrc.js'],
+                    ['/.config/non-existentrc.cjs'],
+                    ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
                 ]);
                 const ccResult = cosmiconfigSync(
@@ -969,13 +973,17 @@ describe('lilconfig', () => {
                     options,
                 ).search();
                 expect(
-                    (fs.promises.access as jest.Mock).mock.calls.slice(-6),
+                    (fs.promises.access as jest.Mock).mock.calls.slice(-10),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
-                    ['/non-existent.config.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.config/non-existentrc'],
+                    ['/.config/non-existentrc.json'],
+                    ['/.config/non-existentrc.js'],
+                    ['/.config/non-existentrc.cjs'],
+                    ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
                 ]);
                 const ccResult = await cosmiconfig(
