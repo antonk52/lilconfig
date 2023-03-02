@@ -564,18 +564,34 @@ describe('lilconfigSync', () => {
             expect(ccResult).toEqual(expected);
         });
 
+        it('checks in hidden .config dir', () => {
+            const searchFrom = path.join(dirname, 'a', 'b', 'c');
+
+            const result = lilconfigSync('hidden').search(searchFrom);
+            const ccResult = cosmiconfigSync('hidden').search(searchFrom);
+
+            const expected = {hidden: true};
+
+            expect(result?.config).toEqual(expected);
+            expect(ccResult?.config).toEqual(expected);
+        });
+
         if (process.platform !== 'win32') {
             it('default for searchFrom till root directory', () => {
                 const options = {stopDir: '/'};
                 const result = lilconfigSync('non-existent', options).search();
                 expect(
-                    (fs.accessSync as jest.Mock).mock.calls.slice(-6),
+                    (fs.accessSync as jest.Mock).mock.calls.slice(-10),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
-                    ['/non-existent.config.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.config/non-existentrc'],
+                    ['/.config/non-existentrc.json'],
+                    ['/.config/non-existentrc.js'],
+                    ['/.config/non-existentrc.cjs'],
+                    ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
                 ]);
                 const ccResult = cosmiconfigSync(
@@ -961,6 +977,18 @@ describe('lilconfig', () => {
             expect(ccResult).toEqual(expected);
         });
 
+        it('checks in hidden .config dir', async () => {
+            const searchFrom = path.join(dirname, 'a', 'b', 'c');
+
+            const result = await lilconfig('hidden').search(searchFrom);
+            const ccResult = await cosmiconfig('hidden').search(searchFrom);
+
+            const expected = {hidden: true};
+
+            expect(result?.config).toEqual(expected);
+            expect(ccResult?.config).toEqual(expected);
+        });
+
         if (process.platform !== 'win32') {
             it('searches root directory correctly', async () => {
                 const options = {stopDir: '/'};
@@ -969,13 +997,17 @@ describe('lilconfig', () => {
                     options,
                 ).search();
                 expect(
-                    (fs.promises.access as jest.Mock).mock.calls.slice(-6),
+                    (fs.promises.access as jest.Mock).mock.calls.slice(-10),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
-                    ['/non-existent.config.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.config/non-existentrc'],
+                    ['/.config/non-existentrc.json'],
+                    ['/.config/non-existentrc.js'],
+                    ['/.config/non-existentrc.cjs'],
+                    ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
                 ]);
                 const ccResult = await cosmiconfig(

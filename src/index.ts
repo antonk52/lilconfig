@@ -46,8 +46,12 @@ function getDefaultSearchPlaces(name: string): string[] {
         'package.json',
         `.${name}rc.json`,
         `.${name}rc.js`,
-        `${name}.config.js`,
         `.${name}rc.cjs`,
+        `.config/${name}rc`,
+        `.config/${name}rc.json`,
+        `.config/${name}rc.js`,
+        `.config/${name}rc.cjs`,
+        `${name}.config.js`,
         `${name}.config.cjs`,
     ];
 }
@@ -141,7 +145,7 @@ function getPackageProp(
 
 type SearchItem = {
     filepath: string;
-    fileName: string;
+    searchPlace: string;
     loaderKey: string;
 };
 
@@ -150,11 +154,11 @@ function getSearchItems(
     searchPaths: string[],
 ): SearchItem[] {
     return searchPaths.reduce<SearchItem[]>((acc, searchPath) => {
-        searchPlaces.forEach(fileName =>
+        searchPlaces.forEach(sp =>
             acc.push({
-                fileName,
-                filepath: path.join(searchPath, fileName),
-                loaderKey: path.extname(fileName) || 'noExt',
+                searchPlace: sp,
+                filepath: path.join(searchPath, sp),
+                loaderKey: path.extname(sp) || 'noExt',
             }),
         );
 
@@ -200,7 +204,7 @@ export function lilconfig(
             };
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {fileName, filepath, loaderKey} of searchItems) {
+            for (const {searchPlace, filepath, loaderKey} of searchItems) {
                 try {
                     await fs.promises.access(filepath);
                 } catch {
@@ -210,7 +214,7 @@ export function lilconfig(
                 const loader = loaders[loaderKey];
 
                 // handle package.json
-                if (fileName === 'package.json') {
+                if (searchPlace === 'package.json') {
                     const pkg = await loader(filepath, content);
                     const maybeConfig = getPackageProp(packageProp, pkg);
                     if (maybeConfig != null) {
@@ -312,7 +316,7 @@ export function lilconfigSync(
             };
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {fileName, filepath, loaderKey} of searchItems) {
+            for (const {searchPlace, filepath, loaderKey} of searchItems) {
                 try {
                     fs.accessSync(filepath);
                 } catch {
@@ -322,7 +326,7 @@ export function lilconfigSync(
                 const content = String(fs.readFileSync(filepath));
 
                 // handle package.json
-                if (fileName === 'package.json') {
+                if (searchPlace === 'package.json') {
                     const pkg = loader(filepath, content);
                     const maybeConfig = getPackageProp(packageProp, pkg);
                     if (maybeConfig != null) {
