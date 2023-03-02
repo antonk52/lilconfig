@@ -564,6 +564,18 @@ describe('lilconfigSync', () => {
             expect(ccResult).toEqual(expected);
         });
 
+        it('checks in hidden .config dir', () => {
+            const searchFrom = path.join(dirname, 'a', 'b', 'c');
+
+            const result = lilconfigSync('hidden').search(searchFrom);
+            const ccResult = cosmiconfigSync('hidden').search(searchFrom);
+
+            const expected = {hidden: true};
+
+            expect(result?.config).toEqual(expected);
+            expect(ccResult?.config).toEqual(expected);
+        });
+
         if (process.platform !== 'win32') {
             it('default for searchFrom till root directory', () => {
                 const options = {stopDir: '/'};
@@ -963,6 +975,18 @@ describe('lilconfig', () => {
 
             expect(result).toEqual(expected);
             expect(ccResult).toEqual(expected);
+        });
+
+        it('checks in hidden .config dir', async () => {
+            const searchFrom = path.join(dirname, 'a', 'b', 'c');
+
+            const result = await lilconfig('hidden').search(searchFrom);
+            const ccResult = await cosmiconfig('hidden').search(searchFrom);
+
+            const expected = {hidden: true};
+
+            expect(result?.config).toEqual(expected);
+            expect(ccResult?.config).toEqual(expected);
         });
 
         if (process.platform !== 'win32') {
