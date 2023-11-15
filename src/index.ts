@@ -280,7 +280,7 @@ export function lilconfig(
                 break;
             }
 
-            const transformed: LilconfigResult | Promise<LilconfigResult> =
+            const transformed =
                 // not found
                 result.filepath === '' && result.config === null
                     ? transform(null)
