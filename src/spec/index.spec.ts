@@ -14,12 +14,20 @@ jest.mock('fs', () => {
         ...fs,
         promises: {
             ...fs.promises,
+            readFile: jest.fn(
+                (...args: Parameters<typeof fs.promises.readFile>) => {
+                    return fs.promises.readFile(...args);
+                },
+            ),
             access: jest.fn((pth: string) => {
                 return fs.promises.access(pth);
             }),
         },
         accessSync: jest.fn((...args: Parameters<typeof fs.accessSync>) => {
             return fs.accessSync(...args);
+        }),
+        readFileSync: jest.fn((...args: Parameters<typeof fs.readFileSync>) => {
+            return fs.readFileSync(...args);
         }),
     };
 });
@@ -332,6 +340,244 @@ describe('options', () => {
 
         expect(result).toEqual(expected);
         expect(ccResult).toEqual(expected);
+    });
+
+    // running all checks in one to avoid resetting cache for fs.promises.access
+    it('cache with async search()', async () => {
+        const stopDir = path.join(__dirname, 'search');
+        const searchFrom = path.join(stopDir, 'a', 'b', 'c');
+        const searchPlaces = ['cached.config.js', 'package.json'];
+        const searcher = lilconfig('cached', {
+            cache: true,
+            stopDir,
+            searchPlaces,
+        });
+        const fsLookUps = () =>
+            (fs.promises.access as jest.Mock).mock.calls.length;
+
+        // per one search
+        // for unexisting
+        // (search + a + b + c) * times searchPlaces
+
+        // for existing
+        // (search + a + b + c) * (times searchPlaces - **first** matched)
+        const expectedFsLookUps = 7;
+
+        // initial search populates cache
+        const result = await searcher.search(searchFrom);
+
+        expect(fsLookUps()).toBe(expectedFsLookUps);
+
+        // subsequant search reads from cache
+        const result2 = await searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps);
+        expect(result).toEqual(result2);
+
+        // searching a subpath reuses cache
+        const result3 = await searcher.search(path.join(stopDir, 'a'));
+        const result4 = await searcher.search(path.join(stopDir, 'a', 'b'));
+        expect(fsLookUps()).toBe(expectedFsLookUps);
+        expect(result2).toEqual(result3);
+        expect(result3).toEqual(result4);
+
+        // calling clearCaches empties search cache
+        searcher.clearCaches();
+
+        // emptied all caches, should perform new lookups
+        const result5 = await searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps * 2);
+        expect(result4).toEqual(result5);
+        // different references
+        expect(result4 === result5).toEqual(false);
+
+        searcher.clearSearchCache();
+        const result6 = await searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+        expect(result5).toEqual(result6);
+        // different references
+        expect(result5 === result6).toEqual(false);
+
+        // clearLoadCache does not clear search cache
+        searcher.clearLoadCache();
+        const result7 = await searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+        expect(result6).toEqual(result7);
+        // same references
+        expect(result6 === result7).toEqual(true);
+
+        // searching a superset path will access fs until it hits a known path
+        const result8 = await searcher.search(path.join(searchFrom, 'd'));
+        expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+        expect(result7).toEqual(result8);
+        // same references
+        expect(result7 === result8).toEqual(true);
+    });
+
+    it('cache with sync search()', () => {
+        const stopDir = path.join(__dirname, 'search');
+        const searchFrom = path.join(stopDir, 'a', 'b', 'c');
+        const searchPlaces = ['cached.config.js', 'package.json'];
+        const searcher = lilconfigSync('cached', {
+            cache: true,
+            stopDir,
+            searchPlaces,
+        });
+        const fsLookUps = () => (fs.accessSync as jest.Mock).mock.calls.length;
+
+        // per one search
+        // for unexisting
+        // (search + a + b + c) * times searchPlaces
+
+        // for existing
+        // (search + a + b + c) * (times searchPlaces - **first** matched)
+        const expectedFsLookUps = 7;
+
+        // initial search populates cache
+        const result = searcher.search(searchFrom);
+
+        expect(fsLookUps()).toBe(expectedFsLookUps);
+
+        // subsequant search reads from cache
+        const result2 = searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps);
+        expect(result).toEqual(result2);
+
+        // searching a subpath reuses cache
+        const result3 = searcher.search(path.join(stopDir, 'a'));
+        const result4 = searcher.search(path.join(stopDir, 'a', 'b'));
+        expect(fsLookUps()).toBe(expectedFsLookUps);
+        expect(result2).toEqual(result3);
+        expect(result3).toEqual(result4);
+
+        // calling clearCaches empties search cache
+        searcher.clearCaches();
+
+        // emptied all caches, should perform new lookups
+        const result5 = searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps * 2);
+        expect(result4).toEqual(result5);
+        // different references
+        expect(result4 === result5).toEqual(false);
+
+        searcher.clearSearchCache();
+        const result6 = searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+        expect(result5).toEqual(result6);
+        // different references
+        expect(result5 === result6).toEqual(false);
+
+        // clearLoadCache does not clear search cache
+        searcher.clearLoadCache();
+        const result7 = searcher.search(searchFrom);
+        expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+        expect(result6).toEqual(result7);
+        // same references
+        expect(result6 === result7).toEqual(true);
+
+        // searching a superset path will access fs until it hits a known path
+        const result8 = searcher.search(path.join(searchFrom, 'd'));
+        expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+        expect(result7).toEqual(result8);
+        // same references
+        expect(result7 === result8).toEqual(true);
+    });
+
+    it('cache with async load()', async () => {
+        const stopDir = path.join(__dirname, 'search');
+        const searchPlaces = ['cached.config.js', 'package.json'];
+        const searcher = lilconfig('cached', {
+            cache: true,
+            stopDir,
+            searchPlaces,
+        });
+        const existingFile = path.join(stopDir, 'cached.config.js');
+        const fsReadFileCalls = () =>
+            (fs.promises.readFile as jest.Mock).mock.calls.length;
+
+        expect(fsReadFileCalls()).toBe(0);
+
+        // initial search populates cache
+        const result = await searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(1);
+
+        // subsequant load reads from cache
+        const result2 = await searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(1);
+        expect(result).toEqual(result2);
+        // same reference
+        expect(result === result2).toEqual(true);
+
+        // calling clearCaches empties search cache
+        searcher.clearCaches();
+        const result3 = await searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(2);
+        expect(result2).toEqual(result3);
+        // different reference
+        expect(result2 === result3).toEqual(false);
+
+        searcher.clearLoadCache();
+        const result4 = await searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(3);
+        expect(result3).toEqual(result4);
+        // different reference
+        expect(result3 === result4).toEqual(false);
+
+        // clearLoadCache does not clear search cache
+        searcher.clearSearchCache();
+        const result5 = await searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(3);
+        expect(result4).toEqual(result5);
+        // same reference
+        expect(result4 === result5).toEqual(true);
+    });
+
+    it('cache with sync load()', () => {
+        const stopDir = path.join(__dirname, 'search');
+        const searchPlaces = ['cached.config.js', 'package.json'];
+        const searcher = lilconfigSync('cached', {
+            cache: true,
+            stopDir,
+            searchPlaces,
+        });
+        const existingFile = path.join(stopDir, 'cached.config.js');
+        const fsReadFileCalls = () =>
+            (fs.readFileSync as jest.Mock).mock.calls.length;
+
+        expect(fsReadFileCalls()).toBe(0);
+
+        // initial search populates cache
+        const result = searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(1);
+
+        // subsequant load reads from cache
+        const result2 = searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(1);
+        expect(result).toEqual(result2);
+        // same reference
+        expect(result === result2).toEqual(true);
+
+        // calling clearCaches empties search cache
+        searcher.clearCaches();
+        const result3 = searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(2);
+        expect(result2).toEqual(result3);
+        // different reference
+        expect(result2 === result3).toEqual(false);
+
+        searcher.clearLoadCache();
+        const result4 = searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(3);
+        expect(result3).toEqual(result4);
+        // different reference
+        expect(result3 === result4).toEqual(false);
+
+        // clearLoadCache does not clear search cache
+        searcher.clearSearchCache();
+        const result5 = searcher.load(existingFile);
+        expect(fsReadFileCalls()).toBe(3);
+        expect(result4).toEqual(result5);
+        // same reference
+        expect(result4 === result5).toEqual(true);
     });
 
     describe('packageProp', () => {
