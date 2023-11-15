@@ -12,6 +12,7 @@ export type LilconfigResult = null | {
 };
 
 interface OptionsBase {
+    cache?: boolean;
     stopDir?: string;
     searchPlaces?: string[];
     ignoreEmptySearchPlaces?: boolean;
@@ -101,6 +102,7 @@ function getOptions(
         stopDir: os.homedir(),
         searchPlaces: getDefaultSearchPlaces(name),
         ignoreEmptySearchPlaces: true,
+        cache: true,
         transform: (x: LilconfigResult): LilconfigResult => x,
         packageProp: [name],
         ...options,
@@ -147,6 +149,7 @@ type SearchItem = {
     filepath: string;
     searchPlace: string;
     loaderKey: string;
+    searchPath: string;
 };
 
 function getSearchItems(
@@ -156,6 +159,7 @@ function getSearchItems(
     return searchPaths.reduce<SearchItem[]>((acc, searchPath) => {
         searchPlaces.forEach(sp =>
             acc.push({
+                searchPath,
                 searchPlace: sp,
                 filepath: path.join(searchPath, sp),
                 loaderKey: path.extname(sp) || 'noExt',
@@ -176,10 +180,25 @@ function validateLoader(loader: Loader, ext: string): void | never {
         throw new Error('loader is not a function');
 }
 
+type ClearCaches = {
+    clearLoadCache: () => void;
+    clearSearchCache: () => void;
+    clearCaches: () => void;
+};
+
+const makeEmplace =
+    <T extends LilconfigResult | Promise<LilconfigResult>>(
+        enableCache: boolean,
+    ) =>
+    (c: Map<string, T>, filepath: string, res: T): T => {
+        if (enableCache) c.set(filepath, res);
+        return res;
+    };
+
 type AsyncSearcher = {
     search(searchFrom?: string): Promise<LilconfigResult>;
     load(filepath: string): Promise<LilconfigResult>;
-};
+} & ClearCaches;
 
 export function lilconfig(
     name: string,
@@ -192,7 +211,12 @@ export function lilconfig(
         searchPlaces,
         stopDir,
         transform,
+        cache,
     } = getOptions(name, options);
+    type R = LilconfigResult | Promise<LilconfigResult>;
+    const searchCache = new Map<string, R>();
+    const loadCache = new Map<string, R>();
+    const emplace = makeEmplace<R>(cache);
 
     return {
         async search(searchFrom = process.cwd()): Promise<LilconfigResult> {
@@ -204,7 +228,22 @@ export function lilconfig(
             };
 
             const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {searchPlace, filepath, loaderKey} of searchItems) {
+            const visited: Set<string> = new Set();
+            for (const {
+                searchPlace,
+                filepath,
+                loaderKey,
+                searchPath,
+            } of searchItems) {
+                if (cache) {
+                    if (searchCache.has(searchPath)) {
+                        return searchCache.get(searchPath) as
+                            | LilconfigResult
+                            | Promise<LilconfigResult>;
+                    } else {
+                        visited.has(searchPath) || visited.add(searchPath);
+                    }
+                }
                 try {
                     await fs.promises.access(filepath);
                 } catch {
@@ -241,15 +280,26 @@ export function lilconfig(
                 break;
             }
 
-            // not found
-            if (result.filepath === '' && result.config === null)
-                return transform(null);
+            const transformed: LilconfigResult | Promise<LilconfigResult> =
+                // not found
+                result.filepath === '' && result.config === null
+                    ? transform(null)
+                    : transform(result);
 
-            return transform(result);
+            if (cache) {
+                for (const p of visited) {
+                    emplace(searchCache, p, transformed);
+                }
+            }
+
+            return transformed;
         },
         async load(filepath: string): Promise<LilconfigResult> {
             validateFilePath(filepath);
             const absPath = path.resolve(process.cwd(), filepath);
+            if (cache && loadCache.has(absPath)) {
+                return loadCache.get(absPath) as LilconfigResult;
+            }
             const {base, ext} = path.parse(absPath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
@@ -258,10 +308,14 @@ export function lilconfig(
 
             if (base === 'package.json') {
                 const pkg = await loader(absPath, content);
-                return transform({
-                    config: getPackageProp(packageProp, pkg),
-                    filepath: absPath,
-                });
+                return emplace(
+                    loadCache,
+                    absPath,
+                    transform({
+                        config: getPackageProp(packageProp, pkg),
+                        filepath: absPath,
+                    }),
+                );
             }
             const result: LilconfigResult = {
                 config: null,
@@ -270,20 +324,40 @@ export function lilconfig(
             // handle other type of configs
             const isEmpty = content.trim() === '';
             if (isEmpty && ignoreEmptySearchPlaces)
-                return transform({
-                    config: undefined,
-                    filepath: absPath,
-                    isEmpty: true,
-                });
+                return emplace(
+                    loadCache,
+                    absPath,
+                    transform({
+                        config: undefined,
+                        filepath: absPath,
+                        isEmpty: true,
+                    }),
+                );
 
             // cosmiconfig returns undefined for empty files
             result.config = isEmpty
                 ? undefined
                 : await loader(absPath, content);
 
-            return transform(
-                isEmpty ? {...result, isEmpty, config: undefined} : result,
+            return emplace(
+                loadCache,
+                absPath,
+                transform(
+                    isEmpty ? {...result, isEmpty, config: undefined} : result,
+                ),
             );
+        },
+        clearLoadCache() {
+            if (cache) loadCache.clear();
+        },
+        clearSearchCache() {
+            if (cache) searchCache.clear();
+        },
+        clearCaches() {
+            if (cache) {
+                loadCache.clear();
+                searchCache.clear();
+            }
         },
     };
 }
@@ -291,7 +365,7 @@ export function lilconfig(
 type SyncSearcher = {
     search(searchFrom?: string): LilconfigResult;
     load(filepath: string): LilconfigResult;
-};
+} & ClearCaches;
 
 export function lilconfigSync(
     name: string,
@@ -304,7 +378,12 @@ export function lilconfigSync(
         searchPlaces,
         stopDir,
         transform,
+        cache,
     } = getOptions(name, options);
+    type R = LilconfigResult;
+    const searchCache = new Map<string, R>();
+    const loadCache = new Map<string, R>();
+    const emplace = makeEmplace<R>(cache);
 
     return {
         search(searchFrom = process.cwd()): LilconfigResult {
@@ -315,8 +394,21 @@ export function lilconfigSync(
                 filepath: '',
             };
 
+            const visited: Set<string> = new Set();
             const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {searchPlace, filepath, loaderKey} of searchItems) {
+            for (const {
+                searchPlace,
+                filepath,
+                loaderKey,
+                searchPath,
+            } of searchItems) {
+                if (cache) {
+                    if (searchCache.has(searchPath)) {
+                        return searchCache.get(searchPath) as LilconfigResult;
+                    } else {
+                        visited.has(searchPath) || visited.add(searchPath);
+                    }
+                }
                 try {
                     fs.accessSync(filepath);
                 } catch {
@@ -353,15 +445,26 @@ export function lilconfigSync(
                 break;
             }
 
-            // not found
-            if (result.filepath === '' && result.config === null)
-                return transform(null);
+            const transformed =
+                // not found
+                result.filepath === '' && result.config === null
+                    ? transform(null)
+                    : transform(result);
 
-            return transform(result);
+            if (cache) {
+                for (const p of visited) {
+                    emplace(searchCache, p, transformed);
+                }
+            }
+
+            return transformed;
         },
         load(filepath: string): LilconfigResult {
             validateFilePath(filepath);
             const absPath = path.resolve(process.cwd(), filepath);
+            if (cache && loadCache.has(absPath)) {
+                return loadCache.get(absPath) as LilconfigResult;
+            }
             const {base, ext} = path.parse(absPath);
             const loaderKey = ext || 'noExt';
             const loader = loaders[loaderKey];
@@ -383,18 +486,38 @@ export function lilconfigSync(
             // handle other type of configs
             const isEmpty = content.trim() === '';
             if (isEmpty && ignoreEmptySearchPlaces)
-                return transform({
-                    filepath: absPath,
-                    config: undefined,
-                    isEmpty: true,
-                });
+                return emplace(
+                    loadCache,
+                    absPath,
+                    transform({
+                        filepath: absPath,
+                        config: undefined,
+                        isEmpty: true,
+                    }),
+                );
 
             // cosmiconfig returns undefined for empty files
             result.config = isEmpty ? undefined : loader(absPath, content);
 
-            return transform(
-                isEmpty ? {...result, isEmpty, config: undefined} : result,
+            return emplace(
+                loadCache,
+                absPath,
+                transform(
+                    isEmpty ? {...result, isEmpty, config: undefined} : result,
+                ),
             );
+        },
+        clearLoadCache() {
+            if (cache) loadCache.clear();
+        },
+        clearSearchCache() {
+            if (cache) searchCache.clear();
+        },
+        clearCaches() {
+            if (cache) {
+                loadCache.clear();
+                searchCache.clear();
+            }
         },
     };
 }
