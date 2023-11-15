@@ -237,9 +237,9 @@ export function lilconfig(
             } of searchItems) {
                 if (cache) {
                     if (searchCache.has(searchPath)) {
-                        return searchCache.get(searchPath) as
-                            | LilconfigResult
-                            | Promise<LilconfigResult>;
+                        const r = searchCache.get(searchPath) as R;
+                        for (const p of visited) searchCache.set(p, r);
+                        return r;
                     } else {
                         visited.has(searchPath) || visited.add(searchPath);
                     }
@@ -287,9 +287,7 @@ export function lilconfig(
                     : transform(result);
 
             if (cache) {
-                for (const p of visited) {
-                    emplace(searchCache, p, transformed);
-                }
+                for (const p of visited) searchCache.set(p, transformed);
             }
 
             return transformed;
@@ -404,7 +402,9 @@ export function lilconfigSync(
             } of searchItems) {
                 if (cache) {
                     if (searchCache.has(searchPath)) {
-                        return searchCache.get(searchPath) as LilconfigResult;
+                        const r = searchCache.get(searchPath) as R;
+                        for (const p of visited) searchCache.set(p, r);
+                        return r;
                     } else {
                         visited.has(searchPath) || visited.add(searchPath);
                     }
@@ -452,9 +452,7 @@ export function lilconfigSync(
                     : transform(result);
 
             if (cache) {
-                for (const p of visited) {
-                    emplace(searchCache, p, transformed);
-                }
+                for (const p of visited) searchCache.set(p, transformed);
             }
 
             return transformed;

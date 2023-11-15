@@ -411,6 +411,13 @@ describe('options', () => {
         expect(result7).toEqual(result8);
         // same references
         expect(result7 === result8).toEqual(true);
+
+        // repeated searches do not cause extra fs calls
+        const result9 = await searcher.search(path.join(searchFrom, 'd'));
+        expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+        expect(result8).toEqual(result9);
+        // same references
+        expect(result8 === result9).toEqual(true);
     });
 
     it('cache with sync search()', () => {
@@ -480,6 +487,13 @@ describe('options', () => {
         expect(result7).toEqual(result8);
         // same references
         expect(result7 === result8).toEqual(true);
+
+        // repeated searches do not cause extra fs calls
+        const result9 = searcher.search(path.join(searchFrom, 'd'));
+        expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+        expect(result8).toEqual(result9);
+        // same references
+        expect(result8 === result9).toEqual(true);
     });
 
     it('cache with async load()', async () => {
