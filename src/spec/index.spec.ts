@@ -1603,18 +1603,12 @@ describe('npm package api', () => {
         const lcExplorerKeys = Object.keys(lc.lilconfig('foo'));
         const ccExplorerKeys = Object.keys(cc.cosmiconfig('foo'));
 
-        expect(
-            lcExplorerKeys.every((k: string) => ccExplorerKeys.includes(k)),
-        ).toBe(true);
+        expect(lcExplorerKeys).toEqual(ccExplorerKeys);
 
         const lcExplorerSyncKeys = Object.keys(lc.lilconfigSync('foo'));
         const ccExplorerSyncKeys = Object.keys(cc.cosmiconfigSync('foo'));
 
-        expect(
-            lcExplorerSyncKeys.every((k: string) =>
-                ccExplorerSyncKeys.includes(k),
-            ),
-        ).toBe(true);
+        expect(lcExplorerSyncKeys).toEqual(ccExplorerSyncKeys);
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
         const omitKnownDifferKeys = ({
