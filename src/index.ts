@@ -369,15 +369,6 @@ export function lilconfigSync(
 
                 for (const searchPlace of searchPlaces) {
                     const filepath = path.join(dir, searchPlace);
-                    if (cache) {
-                        if (searchCache.has(dir)) {
-                            const r = searchCache.get(dir) as R;
-                            for (const p of visited) searchCache.set(p, r);
-                            return r;
-                        } else {
-                            visited.has(dir) || visited.add(dir);
-                        }
-                    }
                     try {
                         fs.accessSync(filepath);
                     } catch {
