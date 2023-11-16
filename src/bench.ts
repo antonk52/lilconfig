@@ -7,11 +7,7 @@ const searcherSyncNew = lilconfigSync('prettier');
 const searcherAsyncOld = old('prettier');
 const searcherAsyncNew = lilconfig('prettier');
 
-type Fn = {
-    name: string;
-    fn: () => any;
-    onCycle?: () => void;
-};
+type Fn = import('benchmark').Options;
 async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
     console.log(`Running "${name}"`);
     const suite = new Benchmark.Suite(name, {});
@@ -28,7 +24,7 @@ async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
                 console.log('');
                 res();
             })
-            .run({async: true, minSamples: 100}),
+            .run({async: false, minSamples: 100}),
     );
 }
 
