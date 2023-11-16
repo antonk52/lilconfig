@@ -57,26 +57,15 @@ function getDefaultSearchPlaces(name: string): string[] {
     ];
 }
 
-function getSearchPaths(startDir: string, stopDir: string): string[] {
-    return startDir
-        .split(path.sep)
-        .reduceRight<{searchPlaces: string[]; passedStopDir: boolean}>(
-            (acc, _, ind, arr) => {
-                const currentPath = arr.slice(0, ind + 1).join(path.sep);
-                /**
-                 * fix #17
-                 * On *nix, if cwd is not under homedir,
-                 * the last path will be '', ('/build' -> '')
-                 * but it should be '/' actually.
-                 * And on Windows, this will never happen. ('C:\build' -> 'C:')
-                 */
-                if (!acc.passedStopDir)
-                    acc.searchPlaces.push(currentPath || path.sep);
-                if (currentPath === stopDir) acc.passedStopDir = true;
-                return acc;
-            },
-            {searchPlaces: [], passedStopDir: false},
-        ).searchPlaces;
+/**
+ * @see #17
+ * On *nix, if cwd is not under homedir,
+ * the last path will be '', ('/build' -> '')
+ * but it should be '/' actually.
+ * And on Windows, this will never happen. ('C:\build' -> 'C:')
+ */
+function parentDir(p: string): string {
+    return path.dirname(p) || path.sep;
 }
 
 export const defaultLoaders: LoadersSync = Object.freeze({
@@ -145,31 +134,6 @@ function getPackageProp(
     );
 }
 
-type SearchItem = {
-    filepath: string;
-    searchPlace: string;
-    loaderKey: string;
-    searchPath: string;
-};
-
-function getSearchItems(
-    searchPlaces: string[],
-    searchPaths: string[],
-): SearchItem[] {
-    return searchPaths.reduce<SearchItem[]>((acc, searchPath) => {
-        searchPlaces.forEach(sp =>
-            acc.push({
-                searchPath,
-                searchPlace: sp,
-                filepath: path.join(searchPath, sp),
-                loaderKey: path.extname(sp) || 'noExt',
-            }),
-        );
-
-        return acc;
-    }, []);
-}
-
 function validateFilePath(filepath: string): void {
     if (!filepath) throw new Error('load must pass a non-empty string');
 }
@@ -220,64 +184,64 @@ export function lilconfig(
 
     return {
         async search(searchFrom = process.cwd()): Promise<LilconfigResult> {
-            const searchPaths = getSearchPaths(searchFrom, stopDir);
-
             const result: LilconfigResult = {
                 config: null,
                 filepath: '',
             };
 
-            const searchItems = getSearchItems(searchPlaces, searchPaths);
             const visited: Set<string> = new Set();
-            for (const {
-                searchPlace,
-                filepath,
-                loaderKey,
-                searchPath,
-            } of searchItems) {
+            let dir = searchFrom;
+            dirLoop: while (true) {
                 if (cache) {
-                    if (searchCache.has(searchPath)) {
-                        const r = searchCache.get(searchPath) as R;
+                    if (searchCache.has(dir)) {
+                        const r = searchCache.get(dir) as R;
                         for (const p of visited) searchCache.set(p, r);
                         return r;
                     } else {
-                        visited.has(searchPath) || visited.add(searchPath);
+                        visited.has(dir) || visited.add(dir);
                     }
                 }
-                try {
-                    await fs.promises.access(filepath);
-                } catch {
-                    continue;
-                }
-                const content = String(await fsReadFileAsync(filepath));
-                const loader = loaders[loaderKey];
 
-                // handle package.json
-                if (searchPlace === 'package.json') {
-                    const pkg = await loader(filepath, content);
-                    const maybeConfig = getPackageProp(packageProp, pkg);
-                    if (maybeConfig != null) {
-                        result.config = maybeConfig;
-                        result.filepath = filepath;
-                        break;
+                for (const searchPlace of searchPlaces) {
+                    const filepath = path.join(dir, searchPlace);
+                    try {
+                        await fs.promises.access(filepath);
+                    } catch {
+                        continue;
+                    }
+                    const content = String(await fsReadFileAsync(filepath));
+                    const loaderKey = path.extname(searchPlace) || 'noExt';
+                    const loader = loaders[loaderKey];
+
+                    // handle package.json
+                    if (searchPlace === 'package.json') {
+                        const pkg = await loader(filepath, content);
+                        const maybeConfig = getPackageProp(packageProp, pkg);
+                        if (maybeConfig != null) {
+                            result.config = maybeConfig;
+                            result.filepath = filepath;
+                            break dirLoop;
+                        }
+
+                        continue;
                     }
 
-                    continue;
-                }
+                    // handle other type of configs
+                    const isEmpty = content.trim() === '';
+                    if (isEmpty && ignoreEmptySearchPlaces) continue;
 
-                // handle other type of configs
-                const isEmpty = content.trim() === '';
-                if (isEmpty && ignoreEmptySearchPlaces) continue;
-
-                if (isEmpty) {
-                    result.isEmpty = true;
-                    result.config = undefined;
-                } else {
-                    validateLoader(loader, loaderKey);
-                    result.config = await loader(filepath, content);
+                    if (isEmpty) {
+                        result.isEmpty = true;
+                        result.config = undefined;
+                    } else {
+                        validateLoader(loader, loaderKey);
+                        result.config = await loader(filepath, content);
+                    }
+                    result.filepath = filepath;
+                    break dirLoop;
                 }
-                result.filepath = filepath;
-                break;
+                if (dir === stopDir || dir === path.dirname(dir)) break dirLoop;
+                dir = parentDir(dir);
             }
 
             const transformed =
@@ -385,64 +349,73 @@ export function lilconfigSync(
 
     return {
         search(searchFrom = process.cwd()): LilconfigResult {
-            const searchPaths = getSearchPaths(searchFrom, stopDir);
-
             const result: LilconfigResult = {
                 config: null,
                 filepath: '',
             };
 
             const visited: Set<string> = new Set();
-            const searchItems = getSearchItems(searchPlaces, searchPaths);
-            for (const {
-                searchPlace,
-                filepath,
-                loaderKey,
-                searchPath,
-            } of searchItems) {
+            let dir = searchFrom;
+            dirLoop: while (true) {
                 if (cache) {
-                    if (searchCache.has(searchPath)) {
-                        const r = searchCache.get(searchPath) as R;
+                    if (searchCache.has(dir)) {
+                        const r = searchCache.get(dir) as R;
                         for (const p of visited) searchCache.set(p, r);
                         return r;
                     } else {
-                        visited.has(searchPath) || visited.add(searchPath);
+                        visited.has(dir) || visited.add(dir);
                     }
                 }
-                try {
-                    fs.accessSync(filepath);
-                } catch {
-                    continue;
-                }
-                const loader = loaders[loaderKey];
-                const content = String(fs.readFileSync(filepath));
 
-                // handle package.json
-                if (searchPlace === 'package.json') {
-                    const pkg = loader(filepath, content);
-                    const maybeConfig = getPackageProp(packageProp, pkg);
-                    if (maybeConfig != null) {
-                        result.config = maybeConfig;
-                        result.filepath = filepath;
-                        break;
+                for (const searchPlace of searchPlaces) {
+                    const filepath = path.join(dir, searchPlace);
+                    if (cache) {
+                        if (searchCache.has(dir)) {
+                            const r = searchCache.get(dir) as R;
+                            for (const p of visited) searchCache.set(p, r);
+                            return r;
+                        } else {
+                            visited.has(dir) || visited.add(dir);
+                        }
+                    }
+                    try {
+                        fs.accessSync(filepath);
+                    } catch {
+                        continue;
+                    }
+                    const loaderKey = path.extname(searchPlace) || 'noExt';
+                    const loader = loaders[loaderKey];
+                    const content = String(fs.readFileSync(filepath));
+
+                    // handle package.json
+                    if (searchPlace === 'package.json') {
+                        const pkg = loader(filepath, content);
+                        const maybeConfig = getPackageProp(packageProp, pkg);
+                        if (maybeConfig != null) {
+                            result.config = maybeConfig;
+                            result.filepath = filepath;
+                            break dirLoop;
+                        }
+
+                        continue;
                     }
 
-                    continue;
-                }
+                    // handle other type of configs
+                    const isEmpty = content.trim() === '';
+                    if (isEmpty && ignoreEmptySearchPlaces) continue;
 
-                // handle other type of configs
-                const isEmpty = content.trim() === '';
-                if (isEmpty && ignoreEmptySearchPlaces) continue;
-
-                if (isEmpty) {
-                    result.isEmpty = true;
-                    result.config = undefined;
-                } else {
-                    validateLoader(loader, loaderKey);
-                    result.config = loader(filepath, content);
+                    if (isEmpty) {
+                        result.isEmpty = true;
+                        result.config = undefined;
+                    } else {
+                        validateLoader(loader, loaderKey);
+                        result.config = loader(filepath, content);
+                    }
+                    result.filepath = filepath;
+                    break dirLoop;
                 }
-                result.filepath = filepath;
-                break;
+                if (dir === stopDir || dir === path.dirname(dir)) break dirLoop;
+                dir = parentDir(dir);
             }
 
             const transformed =
