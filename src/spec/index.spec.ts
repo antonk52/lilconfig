@@ -78,7 +78,10 @@ describe('options', () => {
         describe('async loaders', () => {
             const config = {data: 42};
             const options = {
-                loaders: {'.js': async () => config},
+                loaders: {
+                    '.js': async () => config,
+                    noExt: (_: string, content: string) => content,
+                },
             };
 
             it('async load', async () => {
@@ -108,6 +111,54 @@ describe('options', () => {
 
                 expect(result).toEqual({config, filepath});
                 expect(ccResult).toEqual({config, filepath});
+            });
+
+            it('async noExt', async () => {
+                const searchPath = path.join(__dirname, 'search');
+                const filepath = path.join(searchPath, 'noExtension');
+                const opts = {
+                    ...options,
+                    searchPlaces: ['noExtension'],
+                };
+
+                const result = await lilconfig('noExtension', opts).search(
+                    searchPath,
+                );
+                const ccResult = await cosmiconfig('noExtension', opts).search(
+                    searchPath,
+                );
+
+                const expected = {
+                    filepath,
+                    config: 'this file has no extension\n',
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+
+            it('sync noExt', () => {
+                const searchPath = path.join(__dirname, 'search');
+                const filepath = path.join(searchPath, 'noExtension');
+                const opts = {
+                    ...options,
+                    searchPlaces: ['noExtension'],
+                };
+
+                const result = lilconfigSync('noExtension', opts).search(
+                    searchPath,
+                );
+                const ccResult = cosmiconfigSync('noExtension', opts).search(
+                    searchPath,
+                );
+
+                const expected = {
+                    filepath,
+                    config: 'this file has no extension\n',
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
             });
         });
     });
