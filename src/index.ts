@@ -310,14 +310,16 @@ export function lilconfig(
             );
         },
         clearLoadCache() {
-            loadCache.clear();
+            if (cache) loadCache.clear();
         },
         clearSearchCache() {
-            searchCache.clear();
+            if (cache) searchCache.clear();
         },
         clearCaches() {
-            loadCache.clear();
-            searchCache.clear();
+            if (cache) {
+                loadCache.clear();
+                searchCache.clear();
+            }
         },
     };
 }
@@ -468,14 +470,16 @@ export function lilconfigSync(
             );
         },
         clearLoadCache() {
-            loadCache.clear();
+            if (cache) loadCache.clear();
         },
         clearSearchCache() {
-            searchCache.clear();
+            if (cache) searchCache.clear();
         },
         clearCaches() {
-            loadCache.clear();
-            searchCache.clear();
+            if (cache) {
+                loadCache.clear();
+                searchCache.clear();
+            }
         },
     };
 }
