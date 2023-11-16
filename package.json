@@ -44,5 +44,10 @@
     },
     "engines": {
         "node": ">=10"
+    },
+    "dependencies": {
+        "@types/benchmark": "^2.1.5",
+        "benchmark": "^2.1.4",
+        "ts-node": "^10.9.1"
     }
 }
