@@ -7,17 +7,19 @@ const searcherSyncNew = lilconfigSync('prettier');
 const searcherAsyncOld = old('prettier');
 const searcherAsyncNew = lilconfig('prettier');
 
-async function runSuite(
-    name: string,
-    oldFn: () => any,
-    newFn: () => any,
-): Promise<void> {
+type Fn = {
+    name: string;
+    fn: () => any;
+    onCycle?: () => void;
+};
+async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
     console.log(`Running "${name}"`);
-    const suite = new Benchmark.Suite(name);
+    const suite = new Benchmark.Suite(name, {});
+
     return new Promise(res =>
         suite
-            .add('old', oldFn)
-            .add('new', newFn)
+            .add(oldFn)
+            .add(newFn)
             .on('cycle', function (event: any) {
                 console.log(String(event.target));
             })
@@ -31,47 +33,120 @@ async function runSuite(
 }
 
 (async () => {
+    const set = new Set(['existing']);
+    await runSuite(
+        'set',
+        {
+            name: 'always add   ',
+            fn: () => {
+                set.add('existing');
+            },
+        },
+        {
+            name: 'check and add',
+            fn: () => {
+                set.has('existing') || set.add('existing');
+            },
+        },
+    );
+
+    const map = new Map([]);
+    const f = false;
+    await runSuite(
+        'clear caches',
+        {
+            name: 'with check',
+            fn: () => {
+                if (f) {
+                    map.clear();
+                }
+            },
+        },
+        {
+            name: 'call clear',
+            fn: () => {
+                map.clear();
+            },
+        },
+    );
+
     await runSuite(
         'sync single run',
-        () => {
-            searcherSyncOld.search();
+        {
+            name: 'old',
+            fn: () => {
+                searcherSyncOld.search();
+            },
         },
-        () => {
-            searcherSyncNew.search();
+        {
+            name: 'new',
+            fn: () => {
+                searcherSyncNew.search();
+            },
+            onCycle: () => {
+                searcherSyncNew.clearCaches();
+            },
         },
     );
 
     await runSuite(
         'sync double run',
-        () => {
-            searcherSyncOld.search();
-            searcherSyncOld.search();
+        {
+            name: 'old',
+            fn: () => {
+                searcherSyncOld.search();
+                searcherSyncOld.search();
+            },
         },
-        () => {
-            searcherSyncNew.search();
-            searcherSyncNew.search();
+        {
+            name: 'new',
+            fn: () => {
+                searcherSyncNew.search();
+                searcherSyncNew.search();
+            },
+            onCycle: () => {
+                searcherSyncNew.clearCaches();
+            },
         },
     );
 
     await runSuite(
         'async single run',
-        async () => {
-            await searcherAsyncOld.search();
+        {
+            name: 'old',
+            fn: async () => {
+                await searcherAsyncOld.search();
+            },
         },
-        async () => {
-            await searcherAsyncNew.search();
+        {
+            name: 'new',
+            fn: async () => {
+                await searcherAsyncNew.search();
+            },
+            onCycle: () => {
+                searcherAsyncNew.clearCaches();
+            },
         },
     );
 
     await runSuite(
         'async double run',
-        async () => {
-            await searcherAsyncOld.search();
-            await searcherAsyncOld.search();
+        {
+            name: 'old',
+            fn: async () => {
+                await searcherAsyncOld.search();
+                await searcherAsyncOld.search();
+            },
         },
-        async () => {
-            await searcherAsyncNew.search();
-            await searcherAsyncNew.search();
+        {
+            name: 'new',
+            fn: async () => {
+                await searcherAsyncNew.search();
+                await searcherAsyncNew.search();
+            },
+            onCycle: () => {
+                searcherAsyncNew.clearCaches();
+            },
         },
     );
 })();
