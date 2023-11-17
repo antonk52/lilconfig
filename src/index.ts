@@ -197,9 +197,8 @@ export function lilconfig(
                         const r = searchCache.get(dir) as R;
                         for (const p of visited) searchCache.set(p, r);
                         return r;
-                    } else {
-                        visited.has(dir) || visited.add(dir);
                     }
+                    visited.add(dir);
                 }
 
                 for (const searchPlace of searchPlaces) {
@@ -362,9 +361,8 @@ export function lilconfigSync(
                         const r = searchCache.get(dir) as R;
                         for (const p of visited) searchCache.set(p, r);
                         return r;
-                    } else {
-                        visited.has(dir) || visited.add(dir);
                     }
+                    visited.add(dir);
                 }
 
                 for (const searchPlace of searchPlaces) {
