@@ -193,8 +193,8 @@ export function lilconfig(
             let dir = searchFrom;
             dirLoop: while (true) {
                 if (cache) {
-                    if (searchCache.has(dir)) {
-                        const r = searchCache.get(dir) as R;
+                    const r = searchCache.get(dir);
+                    if (r !== undefined) {
                         for (const p of visited) searchCache.set(p, r);
                         return r;
                     }
@@ -357,8 +357,8 @@ export function lilconfigSync(
             let dir = searchFrom;
             dirLoop: while (true) {
                 if (cache) {
-                    if (searchCache.has(dir)) {
-                        const r = searchCache.get(dir) as R;
+                    const r = searchCache.get(dir);
+                    if (r !== undefined) {
                         for (const p of visited) searchCache.set(p, r);
                         return r;
                     }
