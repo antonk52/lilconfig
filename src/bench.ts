@@ -8,14 +8,12 @@ const searcherAsyncOld = old('prettier');
 const searcherAsyncNew = lilconfig('prettier');
 
 type Fn = import('benchmark').Options;
-async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
+async function runSuite(name: string, ...fns: Fn[]): Promise<void> {
     console.log(`Running "${name}"`);
     const suite = new Benchmark.Suite(name, {});
 
-    return new Promise(res =>
+    return new Promise(res => {
         suite
-            .add(oldFn)
-            .add(newFn)
             .on('cycle', function (event: any) {
                 console.log(String(event.target));
             })
@@ -23,9 +21,11 @@ async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
                 console.log('Fastest is ' + this.filter('fastest').map('name'));
                 console.log('');
                 res();
-            })
-            .run({async: false, minSamples: 100}),
-    );
+            });
+
+        fns.forEach(f => suite.add(f));
+        suite.run({async: true, minSamples: 100});
+    });
 }
 
 (async () => {
@@ -62,6 +62,41 @@ async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
             name: 'call clear',
             fn: () => {
                 map.clear();
+            },
+        },
+    );
+
+    const map2 = new Map([
+        ['a', 1],
+        ['b', 2],
+        ['c', 3],
+    ]);
+    await runSuite(
+        'check map and get',
+        {
+            name: 'check and get',
+            fn: () => {
+                if (map2.has('b')) {
+                    const r = map2.get('b');
+                }
+            },
+        },
+        {
+            name: 'get and check for undefined',
+            fn: () => {
+                const r = map2.get('b');
+                if (r !== undefined) {
+                    r;
+                }
+            },
+        },
+        {
+            name: 'get and check for type undefined',
+            fn: () => {
+                const r = map.get('b');
+                if (typeof r !== 'undefined') {
+                    r;
+                }
             },
         },
     );
@@ -110,14 +145,18 @@ async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
         'async single run',
         {
             name: 'old',
-            fn: async () => {
+            defer: true,
+            fn: async (done: any) => {
                 await searcherAsyncOld.search();
+                done.resolve();
             },
         },
         {
             name: 'new',
-            fn: async () => {
+            defer: true,
+            fn: async (done: any) => {
                 await searcherAsyncNew.search();
+                done.resolve();
             },
             onCycle: () => {
                 searcherAsyncNew.clearCaches();
@@ -129,16 +168,20 @@ async function runSuite(name: string, oldFn: Fn, newFn: Fn): Promise<void> {
         'async double run',
         {
             name: 'old',
-            fn: async () => {
+            defer: true,
+            fn: async (done: any) => {
                 await searcherAsyncOld.search();
                 await searcherAsyncOld.search();
+                done.resolve();
             },
         },
         {
             name: 'new',
-            fn: async () => {
+            defer: true,
+            fn: async (done: any) => {
                 await searcherAsyncNew.search();
                 await searcherAsyncNew.search();
+                done.resolve();
             },
             onCycle: () => {
                 searcherAsyncNew.clearCaches();
