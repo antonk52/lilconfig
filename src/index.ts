@@ -239,7 +239,7 @@ export function lilconfig(
                     result.filepath = filepath;
                     break dirLoop;
                 }
-                if (dir === stopDir || dir === path.dirname(dir)) break dirLoop;
+                if (dir === stopDir || dir === parentDir(dir)) break dirLoop;
                 dir = parentDir(dir);
             }
 
@@ -403,7 +403,7 @@ export function lilconfigSync(
                     result.filepath = filepath;
                     break dirLoop;
                 }
-                if (dir === stopDir || dir === path.dirname(dir)) break dirLoop;
+                if (dir === stopDir || dir === parentDir(dir)) break dirLoop;
                 dir = parentDir(dir);
             }
 
