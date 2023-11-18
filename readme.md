@@ -114,3 +114,4 @@ lilconfig('myapp', {
 
 - lilconig v1 → cosmiconfig v6
 - lilconig v2 → cosmiconfig v7
+- lilconig v3 → cosmiconfig v8
