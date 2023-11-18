@@ -14,13 +14,11 @@ jest.mock('fs', () => {
         ...fs,
         promises: {
             ...fs.promises,
-            access: jest.fn((pth: string) => {
-                return fs.promises.access(pth);
-            }),
+            readFile: jest.fn(fs.promises.readFile),
+            access: jest.fn(fs.promises.access),
         },
-        accessSync: jest.fn((...args: Parameters<typeof fs.accessSync>) => {
-            return fs.accessSync(...args);
-        }),
+        accessSync: jest.fn(fs.accessSync),
+        readFileSync: jest.fn(fs.readFileSync),
     };
 });
 
@@ -80,7 +78,10 @@ describe('options', () => {
         describe('async loaders', () => {
             const config = {data: 42};
             const options = {
-                loaders: {'.js': async () => config},
+                loaders: {
+                    '.js': async () => config,
+                    noExt: (_: string, content: string) => content,
+                },
             };
 
             it('async load', async () => {
@@ -111,6 +112,54 @@ describe('options', () => {
                 expect(result).toEqual({config, filepath});
                 expect(ccResult).toEqual({config, filepath});
             });
+
+            it('async noExt', async () => {
+                const searchPath = path.join(__dirname, 'search');
+                const filepath = path.join(searchPath, 'noExtension');
+                const opts = {
+                    ...options,
+                    searchPlaces: ['noExtension'],
+                };
+
+                const result = await lilconfig('noExtension', opts).search(
+                    searchPath,
+                );
+                const ccResult = await cosmiconfig('noExtension', opts).search(
+                    searchPath,
+                );
+
+                const expected = {
+                    filepath,
+                    config: 'this file has no extension\n',
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
+
+            it('sync noExt', () => {
+                const searchPath = path.join(__dirname, 'search');
+                const filepath = path.join(searchPath, 'noExtension');
+                const opts = {
+                    ...options,
+                    searchPlaces: ['noExtension'],
+                };
+
+                const result = lilconfigSync('noExtension', opts).search(
+                    searchPath,
+                );
+                const ccResult = cosmiconfigSync('noExtension', opts).search(
+                    searchPath,
+                );
+
+                const expected = {
+                    filepath,
+                    config: 'this file has no extension\n',
+                };
+
+                expect(result).toEqual(expected);
+                expect(ccResult).toEqual(expected);
+            });
         });
     });
 
@@ -139,7 +188,9 @@ describe('options', () => {
         };
 
         it('sync', () => {
-            const result = lilconfigSync('test-app', options).load(relativeFilepath);
+            const result = lilconfigSync('test-app', options).load(
+                relativeFilepath,
+            );
             const ccResult = cosmiconfigSync('test-app', options).load(
                 relativeFilepath,
             );
@@ -148,7 +199,9 @@ describe('options', () => {
             expect(ccResult).toEqual(expected);
         });
         it('async', async () => {
-            const result = await lilconfig('test-app', options).load(relativeFilepath);
+            const result = await lilconfig('test-app', options).load(
+                relativeFilepath,
+            );
             const ccResult = await cosmiconfig('test-app', options).load(
                 relativeFilepath,
             );
@@ -166,7 +219,8 @@ describe('options', () => {
         describe('ignores by default', () => {
             it('sync', () => {
                 const result = lilconfigSync('test-app').load(relativeFilepath);
-                const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
+                const ccResult =
+                    cosmiconfigSync('test-app').load(relativeFilepath);
 
                 const expected = {
                     config: undefined,
@@ -179,8 +233,12 @@ describe('options', () => {
             });
 
             it('async', async () => {
-                const result = await lilconfig('test-app').load(relativeFilepath);
-                const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
+                const result = await lilconfig('test-app').load(
+                    relativeFilepath,
+                );
+                const ccResult = await cosmiconfig('test-app').load(
+                    relativeFilepath,
+                );
 
                 const expected = {
                     config: undefined,
@@ -325,6 +383,384 @@ describe('options', () => {
         expect(ccResult).toEqual(expected);
     });
 
+    describe('cache', () => {
+        // running all checks in one to avoid resetting cache for fs.promises.access
+        describe('enabled(default)', () => {
+            it('async search()', async () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchFrom = path.join(stopDir, 'a', 'b', 'c');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfig('cached', {
+                    cache: true,
+                    stopDir,
+                    searchPlaces,
+                });
+                const fsLookUps = () =>
+                    (fs.promises.access as jest.Mock).mock.calls.length;
+
+                expect(fsLookUps()).toBe(0);
+
+                // per one search
+                // for unexisting
+                // (search + a + b + c) * times searchPlaces
+
+                // for existing
+                // (search + a + b + c) * (times searchPlaces - **first** matched)
+                const expectedFsLookUps = 7;
+
+                // initial search populates cache
+                const result = await searcher.search(searchFrom);
+
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+
+                // subsequant search reads from cache
+                const result2 = await searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+                expect(result).toEqual(result2);
+
+                // searching a subpath reuses cache
+                const result3 = await searcher.search(path.join(stopDir, 'a'));
+                const result4 = await searcher.search(
+                    path.join(stopDir, 'a', 'b'),
+                );
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+                expect(result2).toEqual(result3);
+                expect(result3).toEqual(result4);
+
+                // calling clearCaches empties search cache
+                searcher.clearCaches();
+
+                // emptied all caches, should perform new lookups
+                const result5 = await searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 2);
+                expect(result4).toEqual(result5);
+                // different references
+                expect(result4 === result5).toEqual(false);
+
+                searcher.clearSearchCache();
+                const result6 = await searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+                expect(result5).toEqual(result6);
+                // different references
+                expect(result5 === result6).toEqual(false);
+
+                // clearLoadCache does not clear search cache
+                searcher.clearLoadCache();
+                const result7 = await searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+                expect(result6).toEqual(result7);
+                // same references
+                expect(result6 === result7).toEqual(true);
+
+                // searching a superset path will access fs until it hits a known path
+                const result8 = await searcher.search(
+                    path.join(searchFrom, 'd'),
+                );
+                expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+                expect(result7).toEqual(result8);
+                // same references
+                expect(result7 === result8).toEqual(true);
+
+                // repeated searches do not cause extra fs calls
+                const result9 = await searcher.search(
+                    path.join(searchFrom, 'd'),
+                );
+                expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+                expect(result8).toEqual(result9);
+                // same references
+                expect(result8 === result9).toEqual(true);
+            });
+
+            it('sync search()', () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchFrom = path.join(stopDir, 'a', 'b', 'c');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfigSync('cached', {
+                    cache: true,
+                    stopDir,
+                    searchPlaces,
+                });
+                const fsLookUps = () =>
+                    (fs.accessSync as jest.Mock).mock.calls.length;
+
+                expect(fsLookUps()).toBe(0);
+
+                // per one search
+                // for unexisting
+                // (search + a + b + c) * times searchPlaces
+
+                // for existing
+                // (search + a + b + c) * (times searchPlaces - **first** matched)
+                const expectedFsLookUps = 7;
+
+                // initial search populates cache
+                const result = searcher.search(searchFrom);
+
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+
+                // subsequant search reads from cache
+                const result2 = searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+                expect(result).toEqual(result2);
+
+                // searching a subpath reuses cache
+                const result3 = searcher.search(path.join(stopDir, 'a'));
+                const result4 = searcher.search(path.join(stopDir, 'a', 'b'));
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+                expect(result2).toEqual(result3);
+                expect(result3).toEqual(result4);
+
+                // calling clearCaches empties search cache
+                searcher.clearCaches();
+
+                // emptied all caches, should perform new lookups
+                const result5 = searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 2);
+                expect(result4).toEqual(result5);
+                // different references
+                expect(result4 === result5).toEqual(false);
+
+                searcher.clearSearchCache();
+                const result6 = searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+                expect(result5).toEqual(result6);
+                // different references
+                expect(result5 === result6).toEqual(false);
+
+                // clearLoadCache does not clear search cache
+                searcher.clearLoadCache();
+                const result7 = searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 3);
+                expect(result6).toEqual(result7);
+                // same references
+                expect(result6 === result7).toEqual(true);
+
+                // searching a superset path will access fs until it hits a known path
+                const result8 = searcher.search(path.join(searchFrom, 'd'));
+                expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+                expect(result7).toEqual(result8);
+                // same references
+                expect(result7 === result8).toEqual(true);
+
+                // repeated searches do not cause extra fs calls
+                const result9 = searcher.search(path.join(searchFrom, 'd'));
+                expect(fsLookUps()).toBe(3 * expectedFsLookUps + 2);
+                expect(result8).toEqual(result9);
+                // same references
+                expect(result8 === result9).toEqual(true);
+            });
+
+            it('async load()', async () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfig('cached', {
+                    cache: true,
+                    stopDir,
+                    searchPlaces,
+                });
+                const existingFile = path.join(stopDir, 'cached.config.js');
+                const fsReadFileCalls = () =>
+                    (fs.promises.readFile as jest.Mock).mock.calls.length;
+
+                expect(fsReadFileCalls()).toBe(0);
+
+                // initial search populates cache
+                const result = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(1);
+
+                // subsequant load reads from cache
+                const result2 = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(1);
+                expect(result).toEqual(result2);
+                // same reference
+                expect(result === result2).toEqual(true);
+
+                // calling clearCaches empties search cache
+                searcher.clearCaches();
+                const result3 = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(2);
+                expect(result2).toEqual(result3);
+                // different reference
+                expect(result2 === result3).toEqual(false);
+
+                searcher.clearLoadCache();
+                const result4 = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(3);
+                expect(result3).toEqual(result4);
+                // different reference
+                expect(result3 === result4).toEqual(false);
+
+                // clearLoadCache does not clear search cache
+                searcher.clearSearchCache();
+                const result5 = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(3);
+                expect(result4).toEqual(result5);
+                // same reference
+                expect(result4 === result5).toEqual(true);
+            });
+
+            it('sync load()', () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfigSync('cached', {
+                    cache: true,
+                    stopDir,
+                    searchPlaces,
+                });
+                const existingFile = path.join(stopDir, 'cached.config.js');
+                const fsReadFileCalls = () =>
+                    (fs.readFileSync as jest.Mock).mock.calls.length;
+
+                expect(fsReadFileCalls()).toBe(0);
+
+                // initial search populates cache
+                const result = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(1);
+
+                // subsequant load reads from cache
+                const result2 = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(1);
+                expect(result).toEqual(result2);
+                // same reference
+                expect(result === result2).toEqual(true);
+
+                // calling clearCaches empties search cache
+                searcher.clearCaches();
+                const result3 = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(2);
+                expect(result2).toEqual(result3);
+                // different reference
+                expect(result2 === result3).toEqual(false);
+
+                searcher.clearLoadCache();
+                const result4 = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(3);
+                expect(result3).toEqual(result4);
+                // different reference
+                expect(result3 === result4).toEqual(false);
+
+                // clearLoadCache does not clear search cache
+                searcher.clearSearchCache();
+                const result5 = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(3);
+                expect(result4).toEqual(result5);
+                // same reference
+                expect(result4 === result5).toEqual(true);
+            });
+        });
+        describe('disabled', () => {
+            it('async search()', async () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchFrom = path.join(stopDir, 'a', 'b', 'c');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfig('cached', {
+                    cache: false,
+                    stopDir,
+                    searchPlaces,
+                });
+                const fsLookUps = () =>
+                    (fs.promises.access as jest.Mock).mock.calls.length;
+
+                expect(fsLookUps()).toBe(0);
+
+                const expectedFsLookUps = 7;
+
+                // initial search populates cache
+                const result = await searcher.search(searchFrom);
+
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+
+                // subsequant search reads from cache
+                const result2 = await searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 2);
+                expect(result).toEqual(result2);
+
+                expect(result2 === result).toBe(false);
+            });
+
+            it('sync search()', () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchFrom = path.join(stopDir, 'a', 'b', 'c');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfigSync('cached', {
+                    cache: false,
+                    stopDir,
+                    searchPlaces,
+                });
+                const fsLookUps = () =>
+                    (fs.accessSync as jest.Mock).mock.calls.length;
+
+                expect(fsLookUps()).toBe(0);
+
+                const expectedFsLookUps = 7;
+
+                // initial search populates cache
+                const result = searcher.search(searchFrom);
+
+                expect(fsLookUps()).toBe(expectedFsLookUps);
+
+                // subsequent search reads from cache
+                const result2 = searcher.search(searchFrom);
+                expect(fsLookUps()).toBe(expectedFsLookUps * 2);
+                expect(result).toEqual(result2);
+
+                expect(result2 === result).toBe(false);
+            });
+
+            it('async load()', async () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfig('cached', {
+                    cache: false,
+                    stopDir,
+                    searchPlaces,
+                });
+                const existingFile = path.join(stopDir, 'cached.config.js');
+                const fsReadFileCalls = () =>
+                    (fs.promises.readFile as jest.Mock).mock.calls.length;
+
+                expect(fsReadFileCalls()).toBe(0);
+
+                // initial search populates cache
+                const result = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(1);
+
+                // subsequant load reads from cache
+                const result2 = await searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(2);
+                expect(result).toEqual(result2);
+                // different reference
+                expect(result === result2).toEqual(false);
+            });
+
+            it('sync load()', () => {
+                const stopDir = path.join(__dirname, 'search');
+                const searchPlaces = ['cached.config.js', 'package.json'];
+                const searcher = lilconfigSync('cached', {
+                    cache: false,
+                    stopDir,
+                    searchPlaces,
+                });
+                const existingFile = path.join(stopDir, 'cached.config.js');
+                const fsReadFileCalls = () =>
+                    (fs.readFileSync as jest.Mock).mock.calls.length;
+
+                expect(fsReadFileCalls()).toBe(0);
+
+                // initial search populates cache
+                const result = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(1);
+
+                // subsequant load reads from cache
+                const result2 = searcher.load(existingFile);
+                expect(fsReadFileCalls()).toBe(2);
+                expect(result).toEqual(result2);
+                // differnt reference
+                expect(result === result2).toEqual(false);
+            });
+        });
+    });
+
     describe('packageProp', () => {
         describe('plain property string', () => {
             const dirname = path.join(__dirname, 'load');
@@ -339,14 +775,20 @@ describe('options', () => {
             };
 
             it('sync', () => {
-                const result = lilconfigSync('foo', options).load(relativeFilepath);
-                const ccResult = cosmiconfigSync('foo', options).load(relativeFilepath);
+                const result = lilconfigSync('foo', options).load(
+                    relativeFilepath,
+                );
+                const ccResult = cosmiconfigSync('foo', options).load(
+                    relativeFilepath,
+                );
 
                 expect(result).toEqual(expected);
                 expect(ccResult).toEqual(expected);
             });
             it('async', async () => {
-                const result = await lilconfig('foo', options).load(relativeFilepath);
+                const result = await lilconfig('foo', options).load(
+                    relativeFilepath,
+                );
                 const ccResult = await cosmiconfig('foo', options).load(
                     relativeFilepath,
                 );
@@ -376,14 +818,20 @@ describe('options', () => {
             };
 
             it('sync', () => {
-                const result = lilconfigSync('foo', options).load(relativeFilepath);
-                const ccResult = cosmiconfigSync('foo', options).load(relativeFilepath);
+                const result = lilconfigSync('foo', options).load(
+                    relativeFilepath,
+                );
+                const ccResult = cosmiconfigSync('foo', options).load(
+                    relativeFilepath,
+                );
 
                 expect(result).toEqual(expected);
                 expect(ccResult).toEqual(expected);
             });
             it('async', async () => {
-                const result = await lilconfig('foo', options).load(relativeFilepath);
+                const result = await lilconfig('foo', options).load(
+                    relativeFilepath,
+                );
                 const ccResult = await cosmiconfig('foo', options).load(
                     relativeFilepath,
                 );
@@ -403,9 +851,10 @@ describe('options', () => {
              * cosmiconfig throws when there is `null` value in the chain of package prop keys
              */
 
-             const expectedMessage = parseInt(process.version.slice(1), 10) > 14
-                ? "Cannot read properties of null (reading 'baz')"
-                : "Cannot read property 'baz' of null"
+            const expectedMessage =
+                parseInt(process.version.slice(1), 10) > 14
+                    ? "Cannot read properties of null (reading 'baz')"
+                    : "Cannot read property 'baz' of null";
 
             it('sync', () => {
                 expect(() => {
@@ -534,7 +983,9 @@ describe('lilconfigSync', () => {
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             const options = {};
-            const result = lilconfigSync('test-app', options).load(relativeFilepath);
+            const result = lilconfigSync('test-app', options).load(
+                relativeFilepath,
+            );
             const ccResult = cosmiconfigSync('test-app', options).load(
                 relativeFilepath,
             );
@@ -886,7 +1337,9 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'test-app.js');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(
+                relativeFilepath,
+            );
 
             const expected = {
                 config: {jsTest: true},
@@ -901,7 +1354,9 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'test-app.cjs');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(
+                relativeFilepath,
+            );
 
             const expected = {
                 config: {jsTest: true},
@@ -916,7 +1371,9 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'test-app.json');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(
+                relativeFilepath,
+            );
 
             const expected = {
                 config: {jsonTest: true},
@@ -932,7 +1389,9 @@ describe('lilconfig', () => {
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(
+                relativeFilepath,
+            );
 
             const expected = {
                 config: {noExtJsonFile: true},
@@ -947,7 +1406,9 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'package.json');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const options = {};
-            const result = await lilconfig('test-app', options).load(relativeFilepath);
+            const result = await lilconfig('test-app', options).load(
+                relativeFilepath,
+            );
             const ccResult = await cosmiconfig('test-app', options).load(
                 relativeFilepath,
             );
@@ -1126,13 +1587,13 @@ describe('lilconfig', () => {
 
             const errMsg = `ENOENT: no such file or directory, open '${filepath}'`;
 
-            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                errMsg,
-            );
+            expect(
+                lilconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError(errMsg);
 
-            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                errMsg,
-            );
+            expect(
+                cosmiconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError(errMsg);
         });
 
         it('throws for invalid json', async () => {
@@ -1143,13 +1604,13 @@ describe('lilconfig', () => {
             /**
              * throws but less elegant
              */
-            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                "Unexpected token / in JSON at position 22",
-            );
+            expect(
+                lilconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError('Unexpected token / in JSON at position 22');
 
-            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                `JSON Error in ${filepath}:`,
-            );
+            expect(
+                cosmiconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError(`JSON Error in ${filepath}:`);
         });
 
         it('throws for provided filepath that does not exist', async () => {
@@ -1172,12 +1633,12 @@ describe('lilconfig', () => {
 
             const errMsg = 'No loader specified for extension ".coffee"';
 
-            expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                errMsg,
-            );
-            expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                errMsg,
-            );
+            expect(
+                lilconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError(errMsg);
+            expect(
+                cosmiconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError(errMsg);
         });
 
         it('loader is not a function', async () => {
@@ -1215,12 +1676,12 @@ describe('lilconfig', () => {
             );
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
-            await expect(lilconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                'Unexpected token # in JSON at position 2',
-            );
-            await expect(cosmiconfig('test-app').load(relativeFilepath)).rejects.toThrowError(
-                `YAML Error in ${filepath}`,
-            );
+            await expect(
+                lilconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError('Unexpected token # in JSON at position 2');
+            await expect(
+                cosmiconfig('test-app').load(relativeFilepath),
+            ).rejects.toThrowError(`YAML Error in ${filepath}`);
         });
 
         it('throws for empty strings passed to load', async () => {
@@ -1309,18 +1770,12 @@ describe('npm package api', () => {
         const lcExplorerKeys = Object.keys(lc.lilconfig('foo'));
         const ccExplorerKeys = Object.keys(cc.cosmiconfig('foo'));
 
-        expect(
-            lcExplorerKeys.every((k: string) => ccExplorerKeys.includes(k)),
-        ).toBe(true);
+        expect(lcExplorerKeys).toEqual(ccExplorerKeys);
 
         const lcExplorerSyncKeys = Object.keys(lc.lilconfigSync('foo'));
         const ccExplorerSyncKeys = Object.keys(cc.cosmiconfigSync('foo'));
 
-        expect(
-            lcExplorerSyncKeys.every((k: string) =>
-                ccExplorerSyncKeys.includes(k),
-            ),
-        ).toBe(true);
+        expect(lcExplorerSyncKeys).toEqual(ccExplorerSyncKeys);
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
         const omitKnownDifferKeys = ({
