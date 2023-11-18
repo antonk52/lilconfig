@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 16.x, 18.x]
+        node-version: [14.x, 16.x, 18.x, 20.x]
 
     steps:
     - uses: actions/checkout@v1
@@ -22,7 +22,6 @@ jobs:
     - name: build
       run: npm run build
     - name: check codestyle
-      if: matrix.node-version != '10.x'
       run: npm run lint
     - name: tests
       run: npm run test
