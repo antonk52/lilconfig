@@ -26,6 +26,8 @@ beforeEach(() => {
     jest.clearAllMocks();
 });
 
+const isNodeV20orNewer = parseInt(process.versions.node, 10) >= 20;
+
 describe('options', () => {
     const dirname = path.join(__dirname, 'load');
 
@@ -1179,7 +1181,11 @@ describe('lilconfigSync', () => {
              */
             expect(() => {
                 lilconfigSync('test-app').load(relativeFilepath);
-            }).toThrowError('Unexpected token / in JSON at position 22');
+            }).toThrowError(
+                isNodeV20orNewer
+                    ? `Expected ',' or '}' after property value in JSON at position 22`
+                    : 'Unexpected token / in JSON at position 22',
+            );
 
             expect(() => {
                 cosmiconfigSync('test-app').load(relativeFilepath);
@@ -1245,7 +1251,11 @@ describe('lilconfigSync', () => {
 
             expect(() => {
                 lilconfigSync('test-app').load(relativeFilepath);
-            }).toThrowError('Unexpected token # in JSON at position 2');
+            }).toThrowError(
+                isNodeV20orNewer
+                    ? `Unexpected non-whitespace character after JSON at position 2`
+                    : 'Unexpected token # in JSON at position 2',
+            );
             expect(() => {
                 cosmiconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(`YAML Error in ${filepath}`);
@@ -1606,7 +1616,11 @@ describe('lilconfig', () => {
              */
             expect(
                 lilconfig('test-app').load(relativeFilepath),
-            ).rejects.toThrowError('Unexpected token / in JSON at position 22');
+            ).rejects.toThrowError(
+                isNodeV20orNewer
+                    ? `Expected ',' or '}' after property value in JSON at position 22`
+                    : 'Unexpected token / in JSON at position 22',
+            );
 
             expect(
                 cosmiconfig('test-app').load(relativeFilepath),
@@ -1678,7 +1692,11 @@ describe('lilconfig', () => {
 
             await expect(
                 lilconfig('test-app').load(relativeFilepath),
-            ).rejects.toThrowError('Unexpected token # in JSON at position 2');
+            ).rejects.toThrowError(
+                isNodeV20orNewer
+                    ? `Unexpected non-whitespace character after JSON at position 2`
+                    : 'Unexpected token # in JSON at position 2',
+            );
             await expect(
                 cosmiconfig('test-app').load(relativeFilepath),
             ).rejects.toThrowError(`YAML Error in ${filepath}`);
