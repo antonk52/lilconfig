@@ -69,7 +69,7 @@ function parentDir(p: string): string {
 }
 
 export const defaultLoaders: LoadersSync = Object.freeze({
-    '.js': require,
+    '.js': id => import(id).then(mod => mod.default),
     '.json': require,
     '.cjs': require,
     noExt(_, content) {
