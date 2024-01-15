@@ -948,6 +948,22 @@ describe('lilconfigSync', () => {
             expect(result).toEqual(ccResult);
         });
 
+        it('existing mjs file', () => {
+            const filepath = path.join(dirname, 'test-app.mjs');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+
+            const result = lilconfigSync('test-app').load(relativeFilepath);
+            const ccResult = cosmiconfigSync('test-app').load(relativeFilepath);
+
+            const expected = {
+                config: {jsTest: true},
+                filepath,
+            };
+
+            expect(result).toEqual(expected);
+            expect(result).toEqual(ccResult);
+        });
+
         it('existing json file', () => {
             const filepath = path.join(dirname, 'test-app.json');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
@@ -1040,12 +1056,15 @@ describe('lilconfigSync', () => {
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.non-existentrc.mjs'],
                     ['/.config/non-existentrc'],
                     ['/.config/non-existentrc.json'],
                     ['/.config/non-existentrc.js'],
                     ['/.config/non-existentrc.cjs'],
+                    ['/.config/non-existentrc.mjs'],
                     ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
+                    ['/non-existent.config.mjs'],
                 ]);
                 const ccResult = cosmiconfigSync(
                     'non-existent',
@@ -1377,6 +1396,23 @@ describe('lilconfig', () => {
             expect(result).toEqual(ccResult);
         });
 
+        it('existing mjs file', async () => {
+            const filepath = path.join(dirname, 'test-app.mjs');
+            const relativeFilepath = filepath.slice(process.cwd().length + 1);
+            const result = await lilconfig('test-app').load(relativeFilepath);
+            const ccResult = await cosmiconfig('test-app').load(
+                relativeFilepath,
+            );
+
+            const expected = {
+                config: {jsTest: true},
+                filepath,
+            };
+
+            expect(result).toEqual(expected);
+            expect(result).toEqual(ccResult);
+        });
+
         it('existing json file', async () => {
             const filepath = path.join(dirname, 'test-app.json');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
@@ -1474,12 +1510,15 @@ describe('lilconfig', () => {
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.non-existentrc.mjs'],
                     ['/.config/non-existentrc'],
                     ['/.config/non-existentrc.json'],
                     ['/.config/non-existentrc.js'],
                     ['/.config/non-existentrc.cjs'],
+                    ['/.config/non-existentrc.mjs'],
                     ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
+                    ['/non-existent.config.mjs'],
                 ]);
                 const ccResult = await cosmiconfig(
                     'non-existent',
