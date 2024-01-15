@@ -75,6 +75,7 @@ export const defaultLoaders: LoadersSync = Object.freeze({
     '.js': id => import(id).then(mod => mod.default),
     '.json': require,
     '.cjs': require,
+    '.mjs': id => import(id).then(mod => mod.default),
     noExt(_, content) {
         return JSON.parse(content);
     },
