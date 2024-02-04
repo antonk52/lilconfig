@@ -9,7 +9,7 @@
         "build": "tsc --declaration",
         "postbuild": "du -h ./dist/*",
         "clean": "rm -rf ./dist",
-        "test": "jest --coverage",
+        "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/jest --coverage",
         "lint": "eslint ./src/*.ts"
     },
     "keywords": [
