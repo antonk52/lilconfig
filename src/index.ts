@@ -42,18 +42,21 @@ export interface OptionsSync extends OptionsBase {
     transform?: TransformSync;
 }
 
-function getDefaultSearchPlaces(name: string): string[] {
+function getDefaultSearchPlaces(name: string, sync: boolean): string[] {
     return [
         'package.json',
         `.${name}rc.json`,
         `.${name}rc.js`,
         `.${name}rc.cjs`,
+        ...(sync ? [] : [`.${name}rc.mjs`]),
         `.config/${name}rc`,
         `.config/${name}rc.json`,
         `.config/${name}rc.js`,
         `.config/${name}rc.cjs`,
+        ...(sync ? [] : [`.config/${name}rc.mjs`]),
         `${name}.config.js`,
         `${name}.config.cjs`,
+        ...(sync ? [] : [`${name}.config.mjs`]),
     ];
 }
 
@@ -68,34 +71,54 @@ function parentDir(p: string): string {
     return path.dirname(p) || path.sep;
 }
 
-export const defaultLoaders: LoadersSync = Object.freeze({
+const jsonLoader: LoaderSync = (_, content) => JSON.parse(content);
+export const defaultLoadersSync: LoadersSync = Object.freeze({
     '.js': require,
     '.json': require,
     '.cjs': require,
-    noExt(_, content) {
-        return JSON.parse(content);
-    },
+    noExt: jsonLoader,
+});
+
+const dynamicImport = (id: string) => import(id).then(mod => mod.default);
+export const defaultLoaders: LoadersSync = Object.freeze({
+    '.js': dynamicImport,
+    '.mjs': dynamicImport,
+    '.cjs': dynamicImport,
+    '.json': jsonLoader,
+    noExt: jsonLoader,
 });
 
 function getExtDesc(ext: string): string {
     return ext === 'noExt' ? 'files without extensions' : `extension "${ext}"`;
 }
 
-function getOptions(name: string, options?: OptionsSync): Required<OptionsSync>;
-function getOptions(name: string, options?: Options): Required<Options>;
+function getOptions(
+    name: string,
+    options: OptionsSync,
+    sync: true,
+): Required<OptionsSync>;
+function getOptions(
+    name: string,
+    options: Options,
+    sync: false,
+): Required<Options>;
 function getOptions(
     name: string,
     options: Options | OptionsSync = {},
+    sync: boolean,
 ): Required<Options | OptionsSync> {
     const conf: Required<Options> = {
         stopDir: os.homedir(),
-        searchPlaces: getDefaultSearchPlaces(name),
+        searchPlaces: getDefaultSearchPlaces(name, sync),
         ignoreEmptySearchPlaces: true,
         cache: true,
         transform: (x: LilconfigResult): LilconfigResult => x,
         packageProp: [name],
         ...options,
-        loaders: {...defaultLoaders, ...options.loaders},
+        loaders: {
+            ...(sync ? defaultLoadersSync : defaultLoaders),
+            ...options.loaders,
+        },
     };
     conf.searchPlaces.forEach(place => {
         const key = path.extname(place) || 'noExt';
@@ -176,7 +199,7 @@ export function lilconfig(
         stopDir,
         transform,
         cache,
-    } = getOptions(name, options);
+    } = getOptions(name, options ?? {}, false);
     type R = LilconfigResult | Promise<LilconfigResult>;
     const searchCache = new Map<string, R>();
     const loadCache = new Map<string, R>();
@@ -340,7 +363,7 @@ export function lilconfigSync(
         stopDir,
         transform,
         cache,
-    } = getOptions(name, options);
+    } = getOptions(name, options ?? {}, true);
     type R = LilconfigResult;
     const searchCache = new Map<string, R>();
     const loadCache = new Map<string, R>();
