@@ -95,10 +95,6 @@ export const defaultLoaders: Loaders = Object.freeze({
     noExt: jsonLoader,
 });
 
-function getExtDesc(ext: string): string {
-    return ext === 'noExt' ? 'files without extensions' : `extension "${ext}"`;
-}
-
 function getOptions(
     name: string,
     options: OptionsSync,
@@ -131,18 +127,12 @@ function getOptions(
         const key = path.extname(place) || 'noExt';
         const loader = conf.loaders[key];
         if (!loader) {
-            throw new Error(
-                `No loader specified for ${getExtDesc(
-                    key,
-                )}, so searchPlaces item "${place}" is invalid`,
-            );
+            throw new Error(`Missing loader for extension "${place}"`);
         }
 
         if (typeof loader !== 'function') {
             throw new Error(
-                `loader for ${getExtDesc(
-                    key,
-                )} is not a function (type provided: "${typeof loader}"), so searchPlaces item "${place}" is invalid`,
+                `Loader for extension "${place}" is not a function: Received ${typeof loader}.`,
             );
         }
     });
