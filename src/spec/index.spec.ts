@@ -1254,7 +1254,7 @@ describe('lilconfigSync', () => {
                 lilconfigSync('test-app').load(relativeFilepath);
             }).toThrowError(
                 isNodeV20orNewer
-                    ? `Unexpected non-whitespace character after JSON at position 2`
+                    ? `Unexpected token 'h', \"hobbies:\n- "Reading\n`
                     : 'Unexpected token # in JSON at position 2',
             );
             expect(() => {
@@ -1694,8 +1694,8 @@ describe('lilconfig', () => {
                 lilconfig('test-app').load(relativeFilepath),
             ).rejects.toThrowError(
                 isNodeV20orNewer
-                    ? `Unexpected non-whitespace character after JSON at position 2`
-                    : 'Unexpected token # in JSON at position 2',
+                    ? `Unexpected token 'h', "hobbies:\n- \"Reading\n" is not valid JSON`
+                    : 'Unexpected token h in JSON at position 0',
             );
             await expect(
                 cosmiconfig('test-app').load(relativeFilepath),
