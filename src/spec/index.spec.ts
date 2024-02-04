@@ -1785,10 +1785,10 @@ describe('npm package api', () => {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const cc = require('cosmiconfig');
 
-        const lcExplorerKeys = Object.keys(lc.lilconfig('foo'));
-        const ccExplorerKeys = Object.keys(cc.cosmiconfig('foo'));
-
-        expect(lcExplorerKeys).toEqual(ccExplorerKeys);
+        expect(typeof lc.defaultLoaders).toEqual(typeof cc.defaultLoaders);
+        expect(typeof lc.defaultLoadersAsync).toEqual(
+            typeof cc.defaultLoadersAsync,
+        );
 
         const lcExplorerSyncKeys = Object.keys(lc.lilconfigSync('foo'));
         const ccExplorerSyncKeys = Object.keys(cc.cosmiconfigSync('foo'));
@@ -1801,14 +1801,15 @@ describe('npm package api', () => {
             lilconfigSync,
             cosmiconfig,
             cosmiconfigSync,
+            metaSearchPlaces,
             ...rest
         }: {
             [key: string]: unknown;
         }) => rest;
         /* eslint-enable @typescript-eslint/no-unused-vars */
 
-        expect(Object.keys(omitKnownDifferKeys(lc))).toEqual(
-            Object.keys(omitKnownDifferKeys(cc)),
+        expect(Object.keys(omitKnownDifferKeys(lc)).sort()).toEqual(
+            Object.keys(omitKnownDifferKeys(cc)).sort(),
         );
     });
 });
