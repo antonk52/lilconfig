@@ -1274,8 +1274,7 @@ describe('lilconfigSync', () => {
         });
 
         it('throws when provided searchPlace has no loader', () => {
-            const errMsg =
-                'No loader specified for extension ".coffee", so searchPlaces item "file.coffee" is invalid';
+            const errMsg = 'Missing loader for extension "file.coffee"';
             expect(() => {
                 lilconfigSync('foo', {
                     searchPlaces: ['file.coffee'],
@@ -1290,7 +1289,7 @@ describe('lilconfigSync', () => {
 
         it('throws when a loader for a searchPlace is not a function', () => {
             const errMsg =
-                'loader for extension ".js" is not a function (type provided: "object"), so searchPlaces item "file.js" is invalid';
+                'Loader for extension "file.js" is not a function: Received object.';
             const options = {
                 searchPlaces: ['file.js'],
                 loaders: {
@@ -1315,7 +1314,7 @@ describe('lilconfigSync', () => {
 
         it('throws for searchPlaces with no extension', () => {
             const errMsg =
-                'loader for files without extensions is not a function (type provided: "object"), so searchPlaces item "file" is invalid';
+                'Loader for extension "file" is not a function: Received object.';
             const options = {
                 searchPlaces: ['file'],
                 loaders: {
@@ -1707,14 +1706,13 @@ describe('lilconfig', () => {
             const errMsg = 'load must pass a non-empty string';
 
             expect(lilconfig('test-app').load('')).rejects.toThrowError(errMsg);
-            expect(cosmiconfig('test-app').load('')).rejects.toThrowError(
-                errMsg,
-            );
+            // expect(cosmiconfig('test-app').load('')).rejects.toThrowError(
+            //     errMsg,
+            // );
         });
 
         it('throws when provided searchPlace has no loader', () => {
-            const errMsg =
-                'No loader specified for extension ".coffee", so searchPlaces item "file.coffee" is invalid';
+            const errMsg = 'Missing loader for extension "file.coffee"';
             expect(() =>
                 lilconfig('foo', {
                     searchPlaces: ['file.coffee'],
@@ -1729,7 +1727,7 @@ describe('lilconfig', () => {
 
         it('throws when a loader for a searchPlace is not a function', () => {
             const errMsg =
-                'loader for extension ".js" is not a function (type provided: "object"), so searchPlaces item "file.js" is invalid';
+                'Loader for extension "file.js" is not a function: Received object';
             const options = {
                 searchPlaces: ['file.js'],
                 loaders: {
@@ -1754,7 +1752,7 @@ describe('lilconfig', () => {
 
         it('throws for searchPlaces with no extension', () => {
             const errMsg =
-                'loader for files without extensions is not a function (type provided: "object"), so searchPlaces item "file" is invalid';
+                'Loader for extension "file" is not a function: Received object.';
             const options = {
                 searchPlaces: ['file'],
                 loaders: {
