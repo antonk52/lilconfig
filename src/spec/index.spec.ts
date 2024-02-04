@@ -1468,18 +1468,21 @@ describe('lilconfig', () => {
                     options,
                 ).search();
                 expect(
-                    (fs.promises.access as jest.Mock).mock.calls.slice(-10),
+                    (fs.promises.access as jest.Mock).mock.calls.slice(-13),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
                     ['/.non-existentrc.js'],
                     ['/.non-existentrc.cjs'],
+                    ['/.non-existentrc.mjs'],
                     ['/.config/non-existentrc'],
                     ['/.config/non-existentrc.json'],
                     ['/.config/non-existentrc.js'],
                     ['/.config/non-existentrc.cjs'],
+                    ['/.config/non-existentrc.mjs'],
                     ['/non-existent.config.js'],
                     ['/non-existent.config.cjs'],
+                    ['/non-existent.config.mjs'],
                 ]);
                 const ccResult = await cosmiconfig(
                     'non-existent',
@@ -1584,7 +1587,7 @@ describe('lilconfig', () => {
                 .catch(x => x);
             const ccResult = await cosmiconfig('maybeEmpty', options)
                 .search(searchFrom)
-                .catch(x => x);
+                .catch((x: unknown) => x);
 
             expect(result instanceof LoaderError).toBeTruthy();
             expect(ccResult instanceof LoaderError).toBeTruthy();
