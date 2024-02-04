@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import * as path from 'path';
 import * as fs from 'fs';
 import {lilconfig, lilconfigSync, LoaderSync, TransformSync} from '..';
@@ -1236,7 +1237,7 @@ describe('lilconfigSync', () => {
                 lilconfigSync('test-app', options).load(relativeFilepath);
             }).toThrowError(errMsg);
             expect(() => {
-                // @ts-expect-error: unit test is literally for this purpose
+                // @ts-ignore: unit test is literally for this purpose
                 cosmiconfigSync('test-app', options).load(relativeFilepath);
             }).toThrowError(errMsg);
         });
@@ -1306,7 +1307,7 @@ describe('lilconfigSync', () => {
             expect(() => {
                 cosmiconfigSync(
                     'foo',
-                    // @ts-expect-error: unit test is literally for this purpose
+                    // @ts-ignore: needed for jest
                     options,
                 );
             }).toThrowError(errMsg);
@@ -1331,7 +1332,7 @@ describe('lilconfigSync', () => {
             expect(() => {
                 cosmiconfigSync(
                     'foo',
-                    // @ts-expect-error: unit test is literally for this purpose
+                    // @ts-ignore: needed for jest
                     options,
                 );
             }).toThrowError(errMsg);
@@ -1677,11 +1678,8 @@ describe('lilconfig', () => {
                 ).load(relativeFilepath),
             ).rejects.toThrowError(errMsg);
             expect(
-                cosmiconfig(
-                    'test-app',
-                    // @ts-expect-error: for unit test purpose
-                    options,
-                ).load(relativeFilepath),
+                // @ts-ignore: required for jest, but not ts used in editor
+                cosmiconfig('test-app', options).load(relativeFilepath),
             ).rejects.toThrowError(errMsg);
         });
 
@@ -1748,7 +1746,7 @@ describe('lilconfig', () => {
             expect(() =>
                 cosmiconfig(
                     'foo',
-                    // @ts-expect-error: for unit test purpose
+                    // @ts-ignore: needed for jest
                     options,
                 ),
             ).toThrowError(errMsg);
@@ -1773,7 +1771,7 @@ describe('lilconfig', () => {
             expect(() => {
                 cosmiconfig(
                     'foo',
-                    // @ts-expect-error: for unit test purpose
+                    // @ts-ignore: needed for jest, but not editor
                     options,
                 );
             }).toThrowError(errMsg);
