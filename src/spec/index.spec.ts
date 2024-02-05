@@ -1268,9 +1268,9 @@ describe('lilconfigSync', () => {
             expect(() => {
                 lilconfigSync('test-app').load('');
             }).toThrowError(errMsg);
-            // expect(() => {
-            //     cosmiconfigSync('test-app').load('');
-            // }).toThrowError(errMsg);
+            expect(() => {
+                cosmiconfigSync('test-app').load('');
+            }).toThrowError('EISDIR: illegal operation on a directory, read');
         });
 
         it('throws when provided searchPlace has no loader', () => {
@@ -1706,9 +1706,9 @@ describe('lilconfig', () => {
             const errMsg = 'load must pass a non-empty string';
 
             expect(lilconfig('test-app').load('')).rejects.toThrowError(errMsg);
-            // expect(cosmiconfig('test-app').load('')).rejects.toThrowError(
-            //     errMsg,
-            // );
+            expect(cosmiconfig('test-app').load('')).rejects.toThrowError(
+                'EISDIR: illegal operation on a directory, read',
+            );
         });
 
         it('throws when provided searchPlace has no loader', () => {
