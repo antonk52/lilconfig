@@ -107,7 +107,7 @@ function getOptions(
 ): Required<Options>;
 function getOptions(
     name: string,
-    options: Options | OptionsSync = {},
+    options: Options | OptionsSync,
     sync: boolean,
 ): Required<Options | OptionsSync> {
     const conf: Required<Options> = {
