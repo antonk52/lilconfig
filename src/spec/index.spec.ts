@@ -116,6 +116,214 @@ describe('options', () => {
                 expect(ccResult).toEqual({config, filepath});
             });
 
+            describe('esm-project', () => {
+                it('async search js', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'esm-project',
+                        'esm.config.js',
+                    );
+                    const searchFrom = path.join(
+                        stopDir,
+                        'esm-project',
+                        'a',
+                        'b',
+                        'c',
+                    );
+
+                    const options = {
+                        searchPlaces: ['esm.config.js'],
+                        stopDir,
+                    };
+
+                    const config = {esm: true};
+
+                    const result = await lilconfig('test-app', options).search(
+                        searchFrom,
+                    );
+                    const ccResult = await cosmiconfig(
+                        'test-app',
+                        options,
+                    ).search(searchFrom);
+
+                    expect(result).toEqual({config, filepath});
+                    expect(ccResult).toEqual({config, filepath});
+                });
+
+                it('async search mjs', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'esm-project',
+                        'esm.config.mjs',
+                    );
+                    const searchFrom = path.join(
+                        stopDir,
+                        'esm-project',
+                        'a',
+                        'b',
+                        'c',
+                    );
+
+                    const options = {
+                        searchPlaces: ['esm.config.mjs'],
+                        stopDir,
+                    };
+
+                    const config = {esm: true};
+
+                    const result = await lilconfig('test-app', options).search(
+                        searchFrom,
+                    );
+                    const ccResult = await cosmiconfig(
+                        'test-app',
+                        options,
+                    ).search(searchFrom);
+
+                    expect(result).toEqual({config, filepath});
+                    expect(ccResult).toEqual({config, filepath});
+                });
+
+                it('async search cjs', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'esm-project',
+                        'esm.config.cjs',
+                    );
+                    const searchFrom = path.join(
+                        stopDir,
+                        'esm-project',
+                        'a',
+                        'b',
+                        'c',
+                    );
+
+                    const options = {
+                        searchPlaces: ['esm.config.cjs'],
+                        stopDir,
+                    };
+
+                    const config = {cjs: true};
+
+                    const result = await lilconfig('test-app', options).search(
+                        searchFrom,
+                    );
+                    const ccResult = await cosmiconfig(
+                        'test-app',
+                        options,
+                    ).search(searchFrom);
+
+                    expect(result).toEqual({config, filepath});
+                    expect(ccResult).toEqual({config, filepath});
+                });
+            });
+
+            describe('cjs-project', () => {
+                it('async search js', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'cjs-project',
+                        'cjs.config.js',
+                    );
+                    const searchFrom = path.join(
+                        stopDir,
+                        'cjs-project',
+                        'a',
+                        'b',
+                        'c',
+                    );
+
+                    const options = {
+                        searchPlaces: ['cjs.config.js'],
+                        stopDir,
+                    };
+
+                    const config = {cjs: true};
+
+                    const result = await lilconfig('test-app', options).search(
+                        searchFrom,
+                    );
+                    const ccResult = await cosmiconfig(
+                        'test-app',
+                        options,
+                    ).search(searchFrom);
+
+                    expect(result).toEqual({config, filepath});
+                    expect(ccResult).toEqual({config, filepath});
+                });
+
+                it('async search mjs', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'cjs-project',
+                        'cjs.config.mjs',
+                    );
+                    const searchFrom = path.join(
+                        stopDir,
+                        'cjs-project',
+                        'a',
+                        'b',
+                        'c',
+                    );
+
+                    const options = {
+                        searchPlaces: ['cjs.config.mjs'],
+                        stopDir,
+                    };
+
+                    const config = {esm: true};
+
+                    const result = await lilconfig('test-app', options).search(
+                        searchFrom,
+                    );
+                    const ccResult = await cosmiconfig(
+                        'test-app',
+                        options,
+                    ).search(searchFrom);
+
+                    expect(result).toEqual({config, filepath});
+                    expect(ccResult).toEqual({config, filepath});
+                });
+
+                it('async search cjs', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'cjs-project',
+                        'cjs.config.cjs',
+                    );
+                    const searchFrom = path.join(
+                        stopDir,
+                        'cjs-project',
+                        'a',
+                        'b',
+                        'c',
+                    );
+
+                    const options = {
+                        searchPlaces: ['cjs.config.cjs'],
+                        stopDir,
+                    };
+
+                    const config = {cjs: true};
+
+                    const result = await lilconfig('test-app', options).search(
+                        searchFrom,
+                    );
+                    const ccResult = await cosmiconfig(
+                        'test-app',
+                        options,
+                    ).search(searchFrom);
+
+                    expect(result).toEqual({config, filepath});
+                    expect(ccResult).toEqual({config, filepath});
+                });
+            });
+
             it('async noExt', async () => {
                 const searchPath = path.join(__dirname, 'search');
                 const filepath = path.join(searchPath, 'noExtension');
