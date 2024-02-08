@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [14.x, 16.x, 18.x, 20.x]
 
     steps:
     - uses: actions/checkout@v1
@@ -20,12 +20,19 @@ jobs:
     - name: install dependencies
       run: npm ci
     - name: build
+      if: matrix.node-version == '20.x'
       run: npm run build
     - name: check codestyle
+      if: matrix.node-version == '20.x'
       run: npm run lint
     - name: tests
+      if: matrix.node-version == '20.x'
       run: npm run test
+    - name: old node tests
+      if: matrix.node-version != '20.x'
+      run: npx ts-node src/spec/old-node-tests.uvu.ts
     - name: Coveralls GitHub Action
       uses: coverallsapp/github-action@v1.1.1
+      if: matrix.node-version == '20.x'
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
