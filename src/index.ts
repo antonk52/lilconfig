@@ -80,11 +80,30 @@ export const defaultLoadersSync: LoadersSync = Object.freeze({
 });
 
 const dynamicImport = async (id: string) => {
-    // to preserve CJS output but keep dynamic import as is
-    // https://github.com/microsoft/TypeScript/issues/43329#issuecomment-922544562
-    const mod = await eval(`import('${id}')`);
+    try {
+        // to preserve CJS output but keep dynamic import as is
+        // https://github.com/microsoft/TypeScript/issues/43329#issuecomment-922544562
+        const mod = await eval(`import('${id}')`);
 
-    return mod.default;
+        return mod.default;
+    } catch (e) {
+        try {
+            return require(id);
+        } catch (requireE: any) {
+            if (
+                requireE.code === 'ERR_REQUIRE_ESM' ||
+                (requireE instanceof SyntaxError &&
+                    requireE
+                        .toString()
+                        .includes(
+                            'Cannot use import statement outside a module',
+                        ))
+            ) {
+                throw e;
+            }
+            throw requireE;
+        }
+    }
 };
 
 export const defaultLoaders: Loaders = Object.freeze({

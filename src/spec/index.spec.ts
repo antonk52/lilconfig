@@ -218,6 +218,22 @@ describe('options', () => {
                     expect(result).toEqual({config, filepath});
                     expect(ccResult).toEqual({config, filepath});
                 });
+                it('throws for using cjs instead of esm in esm project', async () => {
+                    const stopDir = __dirname;
+                    const filepath = path.join(
+                        stopDir,
+                        'esm-project',
+                        'cjs.config.mjs',
+                    );
+
+                    const searcher = lilconfig('test-app', {});
+
+                    const err = await searcher.load(filepath).catch(e => e);
+                    expect(err.toString()).toMatch('module is not defined');
+                    // TODO test for cosmiconfig
+                    // cosmiconfig added this in v9.0.0
+                    // but also some breaking changes
+                });
             });
 
             describe('cjs-project', () => {
