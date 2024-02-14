@@ -42,6 +42,7 @@
         "typescript-eslint": "^7.0.1",
         "uvu": "^0.5.6"
     },
+    "funding": "https://github.com/sponsors/antonk52",
     "engines": {
         "node": ">=14"
     }
