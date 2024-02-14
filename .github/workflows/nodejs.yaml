@@ -3,14 +3,12 @@ name: CI
 on: [push]
 
 jobs:
+
   build:
-
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 18.x, 20.x]
-
+        node-version: [20.x]
     steps:
     - uses: actions/checkout@v1
     - name: Use Node.js ${{ matrix.node-version }}
@@ -20,19 +18,70 @@ jobs:
     - name: install dependencies
       run: npm ci
     - name: build
-      if: matrix.node-version == '20.x'
       run: npm run build
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install dependencies
+      run: npm ci
     - name: check codestyle
-      if: matrix.node-version == '20.x'
       run: npm run lint
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install dependencies
+      run: npm ci
     - name: tests
-      if: matrix.node-version == '20.x'
       run: npm run test
+
+  old-node-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install dependencies
+      run: npm ci
     - name: old node tests
-      if: matrix.node-version != '20.x'
       run: npx ts-node src/spec/old-node-tests.uvu.ts
+
+  coveralls:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install dependencies
+      run: npm ci
     - name: Coveralls GitHub Action
       uses: coverallsapp/github-action@v1.1.1
-      if: matrix.node-version == '20.x'
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
