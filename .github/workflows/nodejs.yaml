@@ -81,6 +81,8 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: install dependencies
       run: npm ci
+    - name: tests
+      run: npm run test
     - name: Coveralls GitHub Action
       uses: coverallsapp/github-action@v1.1.1
       with:
