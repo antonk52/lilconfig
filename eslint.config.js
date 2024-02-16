@@ -1,24 +1,14 @@
 const eslint = require('@eslint/js');
-const tseslint = require('typescript-eslint');
+const prettierPlugin = require('eslint-plugin-prettier/recommended');
 
-module.exports = tseslint.config(
+module.exports = [
     eslint.configs.recommended,
-    ...tseslint.configs.recommended,
+    prettierPlugin,
     {
         rules: {
-            '@typescript-eslint/no-explicit-any': 'off',
-            '@typescript-eslint/ban-ts-comment': [
-                'error',
-                {
-                    'ts-expect-error': 'allow-with-description',
-                    'ts-ignore': true,
-                    'ts-nocheck': true,
-                    'ts-check': false,
-                    minimumDescriptionLength: 3,
-                },
-            ],
+            'no-undef': 'off',
             'no-constant-condition': 'off',
             'prefer-const': 'error',
         },
     },
-);
+];
