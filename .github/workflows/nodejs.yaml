@@ -66,7 +66,7 @@ jobs:
     - name: install dependencies
       run: npm ci
     - name: old node tests
-      run: npx ts-node src/spec/old-node-tests.uvu.ts
+      run: node src/spec/old-node-tests.uvu.js
 
   coveralls:
     runs-on: ubuntu-latest
