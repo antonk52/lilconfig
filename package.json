@@ -6,7 +6,8 @@
     "types": "src/index.d.ts",
     "scripts": {
         "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/jest --coverage",
-        "lint": "eslint ./src/*.js"
+        "lint": "eslint ./src/*.js",
+        "types": "tsc --noEmit"
     },
     "keywords": [
         "cosmiconfig",
