@@ -1,48 +1,12 @@
-import * as path from 'path';
-import * as fs from 'fs';
-import * as os from 'os';
+// @ts-check
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 const fsReadFileAsync = fs.promises.readFile;
 
-export type LilconfigResult = null | {
-    filepath: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    config: any;
-    isEmpty?: boolean;
-};
-
-interface OptionsBase {
-    cache?: boolean;
-    stopDir?: string;
-    searchPlaces?: string[];
-    ignoreEmptySearchPlaces?: boolean;
-    packageProp?: string | string[];
-}
-
-export type Transform =
-    | TransformSync
-    | ((result: LilconfigResult) => Promise<LilconfigResult>);
-export type TransformSync = (result: LilconfigResult) => LilconfigResult;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LoaderResult = any;
-export type LoaderSync = (filepath: string, content: string) => LoaderResult;
-export type Loader =
-    | LoaderSync
-    | ((filepath: string, content: string) => Promise<LoaderResult>);
-export type Loaders = Record<string, Loader>;
-export type LoadersSync = Record<string, LoaderSync>;
-
-export interface Options extends OptionsBase {
-    loaders?: Loaders;
-    transform?: Transform;
-}
-
-export interface OptionsSync extends OptionsBase {
-    loaders?: LoadersSync;
-    transform?: TransformSync;
-}
-
-function getDefaultSearchPlaces(name: string, sync: boolean): string[] {
+/** @type {(name: string, sync: boolean) => string[]} */
+function getDefaultSearchPlaces(name, sync) {
     return [
         'package.json',
         `.${name}rc.json`,
@@ -61,35 +25,39 @@ function getDefaultSearchPlaces(name: string, sync: boolean): string[] {
 }
 
 /**
- * @see #17
+ * @type {(p: string) => string}
+ *
+ * see #17
  * On *nix, if cwd is not under homedir,
  * the last path will be '', ('/build' -> '')
  * but it should be '/' actually.
  * And on Windows, this will never happen. ('C:\build' -> 'C:')
  */
-function parentDir(p: string): string {
+function parentDir(p) {
     return path.dirname(p) || path.sep;
 }
 
-const jsonLoader: LoaderSync = (_, content) => JSON.parse(content);
-export const defaultLoadersSync: LoadersSync = Object.freeze({
+/** @type {import('./index.d.ts').LoaderSync} */
+const jsonLoader = (_, content) => JSON.parse(content);
+/** @type {import('./index.d.ts').LoadersSync} */
+const defaultLoadersSync = Object.freeze({
     '.js': require,
     '.json': require,
     '.cjs': require,
     noExt: jsonLoader,
 });
+module.exports.defaultLoadersSync = defaultLoadersSync;
 
-const dynamicImport = async (id: string) => {
+/** @type {import('./index.d.ts').Loader} */
+const dynamicImport = async id => {
     try {
-        // to preserve CJS output but keep dynamic import as is
-        // https://github.com/microsoft/TypeScript/issues/43329#issuecomment-922544562
-        const mod = await eval(`import('${id}')`);
+        const mod = await import(id);
 
         return mod.default;
     } catch (e) {
         try {
             return require(id);
-        } catch (requireE: any) {
+        } catch (/** @type {any} */ requireE) {
             if (
                 requireE.code === 'ERR_REQUIRE_ESM' ||
                 (requireE instanceof SyntaxError &&
@@ -106,35 +74,30 @@ const dynamicImport = async (id: string) => {
     }
 };
 
-export const defaultLoaders: Loaders = Object.freeze({
+/** @type {import('./index.d.ts').Loaders} */
+const defaultLoaders = Object.freeze({
     '.js': dynamicImport,
     '.mjs': dynamicImport,
     '.cjs': dynamicImport,
     '.json': jsonLoader,
     noExt: jsonLoader,
 });
+module.exports.defaultLoaders = defaultLoaders;
 
-function getOptions(
-    name: string,
-    options: OptionsSync,
-    sync: true,
-): Required<OptionsSync>;
-function getOptions(
-    name: string,
-    options: Options,
-    sync: false,
-): Required<Options>;
-function getOptions(
-    name: string,
-    options: Options | OptionsSync,
-    sync: boolean,
-): Required<Options | OptionsSync> {
-    const conf: Required<Options> = {
+/**
+ * @param {string} name
+ * @param {import('./index.d.ts').Options | import('./index.d.ts').OptionsSync} options
+ * @param {boolean} sync
+ * @returns {Required<import('./index.d.ts').Options | import('./index.d.ts').OptionsSync>}
+ */
+function getOptions(name, options, sync) {
+    /** @type {Required<import('./index.d.ts').Options>} */
+    const conf = {
         stopDir: os.homedir(),
         searchPlaces: getDefaultSearchPlaces(name, sync),
         ignoreEmptySearchPlaces: true,
         cache: true,
-        transform: (x: LilconfigResult): LilconfigResult => x,
+        transform: x => x,
         packageProp: [name],
         ...options,
         loaders: {
@@ -159,54 +122,37 @@ function getOptions(
     return conf;
 }
 
-function getPackageProp(
-    props: string | string[],
-    obj: Record<string, unknown>,
-): unknown {
+/** @type {(props: string | string[], obj: Record<string, any>) => unknown} */
+function getPackageProp(props, obj) {
     if (typeof props === 'string' && props in obj) return obj[props];
     return (
         (Array.isArray(props) ? props : props.split('.')).reduce(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (acc: any, prop): unknown => (acc === undefined ? acc : acc[prop]),
+            (acc, prop) => (acc === undefined ? acc : acc[prop]),
             obj,
         ) || null
     );
 }
 
-function validateFilePath(filepath: string): void {
+/** @param {string} filepath */
+function validateFilePath(filepath) {
     if (!filepath) throw new Error('load must pass a non-empty string');
 }
 
-function validateLoader(loader: Loader, ext: string): void | never {
+/** @type {(loader: import('./index.d.ts').Loader, ext: string) => void} */
+function validateLoader(loader, ext) {
     if (!loader) throw new Error(`No loader specified for extension "${ext}"`);
     if (typeof loader !== 'function')
         throw new Error('loader is not a function');
 }
 
-type ClearCaches = {
-    clearLoadCache: () => void;
-    clearSearchCache: () => void;
-    clearCaches: () => void;
+/** @type {(enableCache: boolean) => <T>(c: Map<string, T>, filepath: string, res: T) => T} */
+const makeEmplace = enableCache => (c, filepath, res) => {
+    if (enableCache) c.set(filepath, res);
+    return res;
 };
 
-const makeEmplace =
-    <T extends LilconfigResult | Promise<LilconfigResult>>(
-        enableCache: boolean,
-    ) =>
-    (c: Map<string, T>, filepath: string, res: T): T => {
-        if (enableCache) c.set(filepath, res);
-        return res;
-    };
-
-type AsyncSearcher = {
-    search(searchFrom?: string): Promise<LilconfigResult>;
-    load(filepath: string): Promise<LilconfigResult>;
-} & ClearCaches;
-
-export function lilconfig(
-    name: string,
-    options?: Partial<Options>,
-): AsyncSearcher {
+/** @type {import('./index.d.ts').lilconfig} */
+module.exports.lilconfig = function lilconfig(name, options) {
     const {
         ignoreEmptySearchPlaces,
         loaders,
@@ -216,19 +162,19 @@ export function lilconfig(
         transform,
         cache,
     } = getOptions(name, options ?? {}, false);
-    type R = LilconfigResult | Promise<LilconfigResult>;
-    const searchCache = new Map<string, R>();
-    const loadCache = new Map<string, R>();
-    const emplace = makeEmplace<R>(cache);
+    const searchCache = new Map();
+    const loadCache = new Map();
+    const emplace = makeEmplace(cache);
 
     return {
-        async search(searchFrom = process.cwd()): Promise<LilconfigResult> {
-            const result: LilconfigResult = {
+        async search(searchFrom = process.cwd()) {
+            /** @type {import('./index.d.ts').LilconfigResult} */
+            const result = {
                 config: null,
                 filepath: '',
             };
 
-            const visited: Set<string> = new Set();
+            const visited = new Set();
             let dir = searchFrom;
             dirLoop: while (true) {
                 if (cache) {
@@ -294,11 +240,11 @@ export function lilconfig(
 
             return transformed;
         },
-        async load(filepath: string): Promise<LilconfigResult> {
+        async load(filepath) {
             validateFilePath(filepath);
             const absPath = path.resolve(process.cwd(), filepath);
             if (cache && loadCache.has(absPath)) {
-                return loadCache.get(absPath) as LilconfigResult;
+                return loadCache.get(absPath);
             }
             const {base, ext} = path.parse(absPath);
             const loaderKey = ext || 'noExt';
@@ -317,7 +263,8 @@ export function lilconfig(
                     }),
                 );
             }
-            const result: LilconfigResult = {
+            /** @type {import('./index.d.ts').LilconfigResult} */
+            const result = {
                 config: null,
                 filepath: absPath,
             };
@@ -360,17 +307,10 @@ export function lilconfig(
             }
         },
     };
-}
+};
 
-type SyncSearcher = {
-    search(searchFrom?: string): LilconfigResult;
-    load(filepath: string): LilconfigResult;
-} & ClearCaches;
-
-export function lilconfigSync(
-    name: string,
-    options?: OptionsSync,
-): SyncSearcher {
+/** @type {import('./index.d.ts').lilconfigSync} */
+module.exports.lilconfigSync = function lilconfigSync(name, options) {
     const {
         ignoreEmptySearchPlaces,
         loaders,
@@ -380,19 +320,19 @@ export function lilconfigSync(
         transform,
         cache,
     } = getOptions(name, options ?? {}, true);
-    type R = LilconfigResult;
-    const searchCache = new Map<string, R>();
-    const loadCache = new Map<string, R>();
-    const emplace = makeEmplace<R>(cache);
+    const searchCache = new Map();
+    const loadCache = new Map();
+    const emplace = makeEmplace(cache);
 
     return {
-        search(searchFrom = process.cwd()): LilconfigResult {
-            const result: LilconfigResult = {
+        search(searchFrom = process.cwd()) {
+            /** @type {import('./index.d.ts').LilconfigResult} */
+            const result = {
                 config: null,
                 filepath: '',
             };
 
-            const visited: Set<string> = new Set();
+            const visited = new Set();
             let dir = searchFrom;
             dirLoop: while (true) {
                 if (cache) {
@@ -458,11 +398,11 @@ export function lilconfigSync(
 
             return transformed;
         },
-        load(filepath: string): LilconfigResult {
+        load(filepath) {
             validateFilePath(filepath);
             const absPath = path.resolve(process.cwd(), filepath);
             if (cache && loadCache.has(absPath)) {
-                return loadCache.get(absPath) as LilconfigResult;
+                return loadCache.get(absPath);
             }
             const {base, ext} = path.parse(absPath);
             const loaderKey = ext || 'noExt';
@@ -478,7 +418,7 @@ export function lilconfigSync(
                     filepath: absPath,
                 });
             }
-            const result: LilconfigResult = {
+            const result = {
                 config: null,
                 filepath: absPath,
             };
@@ -519,4 +459,4 @@ export function lilconfigSync(
             }
         },
     };
-}
+};
