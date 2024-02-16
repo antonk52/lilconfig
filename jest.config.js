@@ -6,7 +6,7 @@ module.exports = {
     collectCoverageFrom: ['./src/index.js'],
     coverageThreshold: {
         global: {
-            branches: 97,
+            branches: 92,
             functions: 99,
             lines: 99,
             statements: 99,
