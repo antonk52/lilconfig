@@ -1,12 +1,13 @@
-import * as uvu from 'uvu';
-import * as assert from 'assert';
-import * as path from 'path';
-import {lilconfig, lilconfigSync, LoaderSync, TransformSync} from '..';
-import {cosmiconfig, cosmiconfigSync} from 'cosmiconfig';
-import {transpileModule} from 'typescript';
+const uvu = require('uvu');
+const assert = require('assert');
+const path = require('path');
+const {lilconfig, lilconfigSync} = require('..');
+const {cosmiconfig, cosmiconfigSync} = require('cosmiconfig');
+const {transpileModule} = require('typescript');
 
 const dirname = path.join(__dirname, 'load');
-const tsLoader: LoaderSync = (_, content) => {
+/** @type {import('../index').LoaderSync} */
+const tsLoader = (_, content) => {
     const res = transpileModule(content, {}).outputText;
     return eval(res);
 };

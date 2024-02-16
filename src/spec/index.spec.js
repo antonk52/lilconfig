@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import * as path from 'path';
-import * as fs from 'fs';
-import {lilconfig, lilconfigSync, LoaderSync, TransformSync} from '..';
-import {cosmiconfig, cosmiconfigSync} from 'cosmiconfig';
-import {transpileModule} from 'typescript';
+// @ts-check
+const path = require('path');
+const fs = require('fs');
+const {lilconfig, lilconfigSync} = require('..');
+const {cosmiconfig, cosmiconfigSync} = require('cosmiconfig');
+const {transpileModule} = require('typescript');
 
 /**
  * Mocking fs solely to test the root directory filepath
  */
 jest.mock('fs', () => {
-    const fs = jest.requireActual<typeof import('fs')>('fs');
+    const fs = jest.requireActual('fs');
 
     return {
         ...fs,
@@ -33,7 +33,8 @@ describe('options', () => {
     const dirname = path.join(__dirname, 'load');
 
     describe('loaders', () => {
-        const tsLoader: LoaderSync = (_, content) => {
+        /** @type {import('../index').LoaderSync} */
+        const tsLoader = (_, content) => {
             const res = transpileModule(content, {}).outputText;
             return eval(res);
         };
@@ -83,7 +84,9 @@ describe('options', () => {
             const options = {
                 loaders: {
                     '.js': async () => config,
-                    noExt: (_: string, content: string) => content,
+
+                    /** @type {import('../index').LoaderSync} */
+                    noExt: (_, content) => content,
                 },
             };
 
@@ -391,7 +394,8 @@ describe('options', () => {
     });
 
     describe('transform', () => {
-        const transform: TransformSync = result => {
+        /** @type {import('../index').TransformSync} */
+        const transform = result => {
             if (result == null) return null;
             return {
                 ...result,
@@ -460,12 +464,10 @@ describe('options', () => {
             });
 
             it('async', async () => {
-                const result = await lilconfig('test-app').load(
-                    relativeFilepath,
-                );
-                const ccResult = await cosmiconfig('test-app').load(
-                    relativeFilepath,
-                );
+                const result =
+                    await lilconfig('test-app').load(relativeFilepath);
+                const ccResult =
+                    await cosmiconfig('test-app').load(relativeFilepath);
 
                 const expected = {
                     config: undefined,
@@ -623,7 +625,8 @@ describe('options', () => {
                     searchPlaces,
                 });
                 const fsLookUps = () =>
-                    (fs.promises.access as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.promises.access.mock.calls.length;
 
                 expect(fsLookUps()).toBe(0);
 
@@ -708,7 +711,8 @@ describe('options', () => {
                     searchPlaces,
                 });
                 const fsLookUps = () =>
-                    (fs.accessSync as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.accessSync.mock.calls.length;
 
                 expect(fsLookUps()).toBe(0);
 
@@ -787,7 +791,8 @@ describe('options', () => {
                 });
                 const existingFile = path.join(stopDir, 'cached.config.js');
                 const fsReadFileCalls = () =>
-                    (fs.promises.readFile as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.promises.readFile.mock.calls.length;
 
                 expect(fsReadFileCalls()).toBe(0);
 
@@ -836,7 +841,8 @@ describe('options', () => {
                 });
                 const existingFile = path.join(stopDir, 'cached.config.js');
                 const fsReadFileCalls = () =>
-                    (fs.readFileSync as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.readFileSync.mock.calls.length;
 
                 expect(fsReadFileCalls()).toBe(0);
 
@@ -886,7 +892,8 @@ describe('options', () => {
                     searchPlaces,
                 });
                 const fsLookUps = () =>
-                    (fs.promises.access as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.promises.access.mock.calls.length;
 
                 expect(fsLookUps()).toBe(0);
 
@@ -915,7 +922,8 @@ describe('options', () => {
                     searchPlaces,
                 });
                 const fsLookUps = () =>
-                    (fs.accessSync as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.accessSync.mock.calls.length;
 
                 expect(fsLookUps()).toBe(0);
 
@@ -944,7 +952,8 @@ describe('options', () => {
                 });
                 const existingFile = path.join(stopDir, 'cached.config.js');
                 const fsReadFileCalls = () =>
-                    (fs.promises.readFile as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.promises.readFile.mock.calls.length;
 
                 expect(fsReadFileCalls()).toBe(0);
 
@@ -970,7 +979,8 @@ describe('options', () => {
                 });
                 const existingFile = path.join(stopDir, 'cached.config.js');
                 const fsReadFileCalls = () =>
-                    (fs.readFileSync as jest.Mock).mock.calls.length;
+                    // @ts-expect-error
+                    fs.readFileSync.mock.calls.length;
 
                 expect(fsReadFileCalls()).toBe(0);
 
@@ -1259,7 +1269,8 @@ describe('lilconfigSync', () => {
                 const options = {stopDir: '/'};
                 const result = lilconfigSync('non-existent', options).search();
                 expect(
-                    (fs.accessSync as jest.Mock).mock.calls.slice(-10),
+                    // @ts-expect-error
+                    fs.accessSync.mock.calls.slice(-10),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
@@ -1364,7 +1375,7 @@ describe('lilconfigSync', () => {
 
             const options = {
                 loaders: {
-                    '.js'(): void {
+                    '.js'() {
                         throw new LoaderError();
                     },
                 },
@@ -1571,9 +1582,8 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'test-app.js');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(
-                relativeFilepath,
-            );
+            const ccResult =
+                await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsTest: true},
@@ -1588,9 +1598,8 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'test-app.cjs');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(
-                relativeFilepath,
-            );
+            const ccResult =
+                await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsTest: true},
@@ -1605,9 +1614,8 @@ describe('lilconfig', () => {
             const filepath = path.join(dirname, 'test-app.json');
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(
-                relativeFilepath,
-            );
+            const ccResult =
+                await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {jsonTest: true},
@@ -1623,9 +1631,8 @@ describe('lilconfig', () => {
             const relativeFilepath = filepath.slice(process.cwd().length + 1);
 
             const result = await lilconfig('test-app').load(relativeFilepath);
-            const ccResult = await cosmiconfig('test-app').load(
-                relativeFilepath,
-            );
+            const ccResult =
+                await cosmiconfig('test-app').load(relativeFilepath);
 
             const expected = {
                 config: {noExtJsonFile: true},
@@ -1692,7 +1699,8 @@ describe('lilconfig', () => {
                     options,
                 ).search();
                 expect(
-                    (fs.promises.access as jest.Mock).mock.calls.slice(-13),
+                    // @ts-expect-error
+                    fs.promises.access.mock.calls.slice(-13),
                 ).toEqual([
                     ['/package.json'],
                     ['/.non-existentrc.json'],
@@ -1800,7 +1808,7 @@ describe('lilconfig', () => {
 
             const options = {
                 loaders: {
-                    '.js': (): void => {
+                    '.js': () => {
                         throw new LoaderError();
                     },
                 },
@@ -1811,7 +1819,7 @@ describe('lilconfig', () => {
                 .catch(x => x);
             const ccResult = await cosmiconfig('maybeEmpty', options)
                 .search(searchFrom)
-                .catch((x: unknown) => x);
+                .catch(x => x);
 
             expect(result instanceof LoaderError).toBeTruthy();
             expect(ccResult instanceof LoaderError).toBeTruthy();
@@ -2009,7 +2017,12 @@ describe('npm package api', () => {
         const cc = require('cosmiconfig');
 
         expect(typeof lc.defaultLoaders).toEqual(typeof cc.defaultLoaders);
+        expect(typeof lc.defaultLoadersSync).toEqual(
+            typeof cc.defaultLoadersSync,
+        );
+        // @ts-expect-error: not in types
         expect(typeof lc.defaultLoadersAsync).toEqual(
+            // @ts-expect-error: not in types
             typeof cc.defaultLoadersAsync,
         );
 
@@ -2026,12 +2039,12 @@ describe('npm package api', () => {
             cosmiconfigSync,
             metaSearchPlaces,
             ...rest
-        }: {
-            [key: string]: unknown;
         }) => rest;
         /* eslint-enable @typescript-eslint/no-unused-vars */
 
+        // @ts-expect-error: not in types
         expect(Object.keys(omitKnownDifferKeys(lc)).sort()).toEqual(
+            // @ts-expect-error: not in types
             Object.keys(omitKnownDifferKeys(cc)).sort(),
         );
     });
