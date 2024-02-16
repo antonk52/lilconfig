@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "allowJs": true,
+        "checkJs": true,
         "alwaysStrict": true,
         "esModuleInterop": false,
         "lib": ["es2018"],
@@ -19,6 +20,6 @@
         "outDir": "./dist",
         "baseUrl": "./src"
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src/**/*.ts", "src/**/*.js"],
     "exclude": ["src/**/spec", "./package.json"]
 }
