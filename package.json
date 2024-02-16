@@ -15,7 +15,8 @@
         "search"
     ],
     "files": [
-        "dist/*"
+        "src/index.js",
+        "src/index.d.ts"
     ],
     "repository": {
         "type": "git",
