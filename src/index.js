@@ -174,6 +174,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
                 filepath: '',
             };
 
+            /** @type {Set<string>} */
             const visited = new Set();
             let dir = searchFrom;
             dirLoop: while (true) {
@@ -332,6 +333,7 @@ module.exports.lilconfigSync = function lilconfigSync(name, options) {
                 filepath: '',
             };
 
+            /** @type {Set<string>} */
             const visited = new Set();
             let dir = searchFrom;
             dirLoop: while (true) {
