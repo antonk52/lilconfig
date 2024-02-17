@@ -37,9 +37,9 @@ function parentDir(p) {
     return path.dirname(p) || path.sep;
 }
 
-/** @type {import('./index.d.ts').LoaderSync} */
+/** @type {import('./index').LoaderSync} */
 const jsonLoader = (_, content) => JSON.parse(content);
-/** @type {import('./index.d.ts').LoadersSync} */
+/** @type {import('./index').LoadersSync} */
 const defaultLoadersSync = Object.freeze({
     '.js': require,
     '.json': require,
@@ -48,7 +48,7 @@ const defaultLoadersSync = Object.freeze({
 });
 module.exports.defaultLoadersSync = defaultLoadersSync;
 
-/** @type {import('./index.d.ts').Loader} */
+/** @type {import('./index').Loader} */
 const dynamicImport = async id => {
     try {
         const mod = await import(id);
@@ -74,7 +74,7 @@ const dynamicImport = async id => {
     }
 };
 
-/** @type {import('./index.d.ts').Loaders} */
+/** @type {import('./index').Loaders} */
 const defaultLoaders = Object.freeze({
     '.js': dynamicImport,
     '.mjs': dynamicImport,
@@ -86,12 +86,12 @@ module.exports.defaultLoaders = defaultLoaders;
 
 /**
  * @param {string} name
- * @param {import('./index.d.ts').Options | import('./index.d.ts').OptionsSync} options
+ * @param {import('./index').Options | import('./index').OptionsSync} options
  * @param {boolean} sync
- * @returns {Required<import('./index.d.ts').Options | import('./index.d.ts').OptionsSync>}
+ * @returns {Required<import('./index').Options | import('./index').OptionsSync>}
  */
 function getOptions(name, options, sync) {
-    /** @type {Required<import('./index.d.ts').Options>} */
+    /** @type {Required<import('./index').Options>} */
     const conf = {
         stopDir: os.homedir(),
         searchPlaces: getDefaultSearchPlaces(name, sync),
@@ -138,7 +138,7 @@ function validateFilePath(filepath) {
     if (!filepath) throw new Error('load must pass a non-empty string');
 }
 
-/** @type {(loader: import('./index.d.ts').Loader, ext: string) => void} */
+/** @type {(loader: import('./index').Loader, ext: string) => void} */
 function validateLoader(loader, ext) {
     if (!loader) throw new Error(`No loader specified for extension "${ext}"`);
     if (typeof loader !== 'function')
@@ -151,7 +151,7 @@ const makeEmplace = enableCache => (c, filepath, res) => {
     return res;
 };
 
-/** @type {import('./index.d.ts').lilconfig} */
+/** @type {import('./index').lilconfig} */
 module.exports.lilconfig = function lilconfig(name, options) {
     const {
         ignoreEmptySearchPlaces,
@@ -168,7 +168,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
 
     return {
         async search(searchFrom = process.cwd()) {
-            /** @type {import('./index.d.ts').LilconfigResult} */
+            /** @type {import('./index').LilconfigResult} */
             const result = {
                 config: null,
                 filepath: '',
@@ -264,7 +264,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
                     }),
                 );
             }
-            /** @type {import('./index.d.ts').LilconfigResult} */
+            /** @type {import('./index').LilconfigResult} */
             const result = {
                 config: null,
                 filepath: absPath,
@@ -310,7 +310,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
     };
 };
 
-/** @type {import('./index.d.ts').lilconfigSync} */
+/** @type {import('./index').lilconfigSync} */
 module.exports.lilconfigSync = function lilconfigSync(name, options) {
     const {
         ignoreEmptySearchPlaces,
@@ -327,7 +327,7 @@ module.exports.lilconfigSync = function lilconfigSync(name, options) {
 
     return {
         search(searchFrom = process.cwd()) {
-            /** @type {import('./index.d.ts').LilconfigResult} */
+            /** @type {import('./index').LilconfigResult} */
             const result = {
                 config: null,
                 filepath: '',
