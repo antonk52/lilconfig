@@ -1,3 +1,3 @@
 module.exports = {
-    notSoEmpty: true,
+	notSoEmpty: true,
 };

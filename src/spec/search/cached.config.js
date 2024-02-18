@@ -1,3 +1,3 @@
 module.exports = {
-    iWasCached: true,
+	iWasCached: true,
 };
