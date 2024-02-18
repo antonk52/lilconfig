@@ -1,6 +1,6 @@
 {
   "name": "lilconfig",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "A zero-dependency alternative to cosmiconfig",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -15,7 +15,9 @@
     "configuration",
     "search"
   ],
-  "files": ["src/index.*"],
+  "files": [
+    "src/index.*"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/antonk52/lilconfig"
