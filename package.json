@@ -15,10 +15,7 @@
         "configuration",
         "search"
     ],
-    "files": [
-        "src/index.js",
-        "src/index.d.ts"
-    ],
+    "files": ["src/index.*"],
     "repository": {
         "type": "git",
         "url": "https://github.com/antonk52/lilconfig"
