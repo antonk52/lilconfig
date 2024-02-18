@@ -7,7 +7,7 @@
     "scripts": {
         "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/jest --coverage",
         "lint": "eslint ./src",
-        "types": "tsc --noEmit"
+        "types": "tsc"
     },
     "keywords": [
         "cosmiconfig",

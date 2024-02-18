@@ -2,6 +2,7 @@
     "compilerOptions": {
         "allowJs": true,
         "checkJs": true,
+        "noEmit": true,
         "alwaysStrict": true,
         "esModuleInterop": false,
         "lib": ["es2018"],
