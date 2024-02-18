@@ -1336,7 +1336,7 @@ describe('lilconfigSync', () => {
 				lilconfigSync('test-app').load(relativeFilepath);
 			}).toThrowError(
 				isNodeV20orNewer
-					? `Unexpected token 'h', \"hobbies:\n- "Reading\n`
+					? `Unexpected token 'h', "hobbies:\n- "Reading\n`
 					: 'Unexpected token # in JSON at position 2',
 			);
 			expect(() => {
@@ -1753,7 +1753,7 @@ describe('lilconfig', () => {
 				lilconfig('test-app').load(relativeFilepath),
 			).rejects.toThrowError(
 				isNodeV20orNewer
-					? `Unexpected token 'h', "hobbies:\n- \"Reading\n" is not valid JSON`
+					? `Unexpected token 'h', "hobbies:\n- "Reading\n" is not valid JSON`
 					: 'Unexpected token h in JSON at position 0',
 			);
 			await expect(
@@ -1838,9 +1838,7 @@ describe('lilconfig', () => {
 
 describe('npm package api', () => {
 	it('exports the same things as cosmiconfig', () => {
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const lc = require('../index');
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const cc = require('cosmiconfig');
 
 		expect(typeof lc.defaultLoaders).toEqual(typeof cc.defaultLoaders);
@@ -1856,7 +1854,7 @@ describe('npm package api', () => {
 
 		expect(lcExplorerSyncKeys).toEqual(ccExplorerSyncKeys);
 
-		/* eslint-disable @typescript-eslint/no-unused-vars */
+		/* eslint-disable no-unused-vars */
 		const omitKnownDifferKeys = ({
 			lilconfig,
 			lilconfigSync,
@@ -1865,7 +1863,7 @@ describe('npm package api', () => {
 			metaSearchPlaces,
 			...rest
 		}) => rest;
-		/* eslint-enable @typescript-eslint/no-unused-vars */
+		/* eslint-enable no-unused-vars */
 
 		// @ts-expect-error: not in types
 		expect(Object.keys(omitKnownDifferKeys(lc)).sort()).toEqual(
