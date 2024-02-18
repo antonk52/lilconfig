@@ -1,3 +1,3 @@
 module.exports = {
-    cjs: true,
+	cjs: true,
 };

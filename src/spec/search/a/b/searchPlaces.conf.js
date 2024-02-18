@@ -1,3 +1,3 @@
 module.exports = {
-    searchPlacesWorks: true,
+	searchPlacesWorks: true,
 };

@@ -1,3 +1,3 @@
 export default {
-    esm: true,
+	esm: true,
 };

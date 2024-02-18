@@ -1,3 +1,3 @@
 module.exports = {
-    iShouldBeESMbutIAmCJS: true,
+	iShouldBeESMbutIAmCJS: true,
 };

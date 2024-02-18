@@ -1,3 +1,3 @@
 module.exports = {
-    jsTest: true,
+	jsTest: true,
 };

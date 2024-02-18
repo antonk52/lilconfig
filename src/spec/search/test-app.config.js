@@ -1,3 +1,3 @@
 module.exports = {
-    stopped: true,
+	stopped: true,
 };
