@@ -36,6 +36,7 @@ describe('options', () => {
 		/** @type {import('../index').LoaderSync} */
 		const tsLoader = (_, content) => {
 			const res = transpileModule(content, {}).outputText;
+			// biome-ignore lint: it is a test
 			return eval(res);
 		};
 
