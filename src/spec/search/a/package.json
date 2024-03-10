@@ -1,19 +1,19 @@
 {
-    "name": "testing-purposes-only",
-    "test-app": {
-        "customThingHere": "is-configured"
-    },
-    "foo": {
-        "insideFoo": true
-    },
-    "bar": {
-        "baz": {
-            "insideBarBaz": true
-        }
-    },
-    "zoo": {
-        "foo": {
-            "insideZooFoo": true
-        }
+  "name": "testing-purposes-only",
+  "test-app": {
+    "customThingHere": "is-configured"
+  },
+  "foo": {
+    "insideFoo": true
+  },
+  "bar": {
+    "baz": {
+      "insideBarBaz": true
     }
+  },
+  "zoo": {
+    "foo": {
+      "insideZooFoo": true
+    }
+  }
 }
