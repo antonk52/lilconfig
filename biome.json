@@ -23,6 +23,11 @@
       }
     }
   },
+  "formatter": {
+    "ignore": [
+      "src/spec/load/test-invalid.json"
+    ]
+  },
   "javascript": {
     "formatter": {
       "indentStyle": "tab",
