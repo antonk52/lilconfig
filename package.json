@@ -6,7 +6,7 @@
   "types": "src/index.d.ts",
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/jest --coverage",
-    "lint": "biome check ./src",
+    "lint": "biome ci ./src",
     "types": "tsc"
   },
   "keywords": [
@@ -31,7 +31,6 @@
     "@types/node": "^14.18.63",
     "cosmiconfig": "^8.3.6",
     "jest": "^29.7.0",
-    "prettier": "^3.2.5",
     "typescript": "^5.3.3",
     "uvu": "^0.5.6"
   },
