@@ -91,6 +91,7 @@ module.exports.defaultLoaders = defaultLoaders;
 function getOptions(name, options, sync) {
 	/** @type {Required<import('./index').Options>} */
 	const conf = {
+	  startDir: process.cwd(),
 		stopDir: os.homedir(),
 		searchPlaces: getDefaultSearchPlaces(name, sync),
 		ignoreEmptySearchPlaces: true,
@@ -155,6 +156,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
 		loaders,
 		packageProp,
 		searchPlaces,
+		startDir,
 		stopDir,
 		transform,
 		cache,
@@ -164,7 +166,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
 	const emplace = makeEmplace(cache);
 
 	return {
-		async search(searchFrom = process.cwd()) {
+		async search(searchFrom = startDir) {
 			/** @type {import('./index').LilconfigResult} */
 			const result = {
 				config: null,

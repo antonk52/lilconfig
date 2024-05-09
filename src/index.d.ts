@@ -1,14 +1,15 @@
 export type LilconfigResult = null | {
-	filepath: string;
 	config: any;
+	filepath: string;
 	isEmpty?: boolean;
 };
 interface OptionsBase {
 	cache?: boolean;
-	stopDir?: string;
-	searchPlaces?: string[];
 	ignoreEmptySearchPlaces?: boolean;
 	packageProp?: string | string[];
+	searchPlaces?: string[];
+	startDir?: string;
+	stopDir?: string;
 }
 export type Transform =
 	| TransformSync
