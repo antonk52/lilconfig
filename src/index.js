@@ -53,7 +53,7 @@ module.exports.defaultLoadersSync = defaultLoadersSync;
 /** @type {import('./index').Loader} */
 const dynamicImport = async id => {
 	try {
-		const mod = await import(id);
+		const mod = await import(/* webpackIgnore: true */ id);
 
 		return mod.default;
 	} catch (e) {
