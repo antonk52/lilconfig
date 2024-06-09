@@ -40,7 +40,9 @@ function parentDir(p) {
 /** @type {import('./index').LoaderSync} */
 const jsonLoader = (_, content) => JSON.parse(content);
 // Use plain require in webpack context for dynamic import
-const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+const requireFunc =
+	// @ts-expect-error
+	typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
 /** @type {import('./index').LoadersSync} */
 const defaultLoadersSync = Object.freeze({
 	'.js': requireFunc,
