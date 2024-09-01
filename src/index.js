@@ -54,7 +54,7 @@ module.exports.defaultLoadersSync = defaultLoadersSync;
 /** @type {import('./index').Loader} */
 const dynamicImport = async id => {
 	try {
-		const mod = await import(/* webpackIgnore: true */ id);
+		const mod = await import(/* webpackIgnore: true */ `${id}?timestamp=${Date.now()}`);
 
 		return mod.default;
 	} catch (e) {
