@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const url = require('url');
 
 const fsReadFileAsync = fs.promises.readFile;
 
@@ -54,8 +55,9 @@ module.exports.defaultLoadersSync = defaultLoadersSync;
 /** @type {import('./index').Loader} */
 const dynamicImport = async id => {
 	try {
-		const mod = await import(/* webpackIgnore: true */ id);
-
+		const fileUrl = url.pathToFileURL(id).href;
+		const mod = await import(/* webpackIgnore: true */ fileUrl);
+		
 		return mod.default;
 	} catch (e) {
 		try {
