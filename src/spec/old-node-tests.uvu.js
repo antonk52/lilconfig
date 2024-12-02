@@ -1,7 +1,7 @@
 const uvu = require('uvu');
 const assert = require('assert');
 const path = require('path');
-const {lilconfig, lilconfigSync} = require('..');
+const {lilconfig, lilconfigSync, defaultLoaders} = require('..');
 const {cosmiconfig, cosmiconfigSync} = require('cosmiconfig');
 const {transpileModule} = require('typescript');
 
@@ -180,3 +180,28 @@ cjsProjectSuit('async search cjs', async () => {
 });
 
 cjsProjectSuit.run();
+
+const defaultLoaderSuit = uvu.suite('js-default-loader');
+
+defaultLoaderSuit('loads js file', async () => {
+	const filepath = path.join(__dirname, 'load', 'test-app.js');
+	const result = await defaultLoaders['.js'](filepath, '');
+
+	assert.deepStrictEqual(result, {jsTest: true});
+});
+
+defaultLoaderSuit('loads cjs file', async () => {
+	const filepath = path.join(__dirname, 'load', 'test-app.cjs');
+	const result = await defaultLoaders['.cjs'](filepath, '');
+
+	assert.deepStrictEqual(result, {jsTest: true});
+});
+
+defaultLoaderSuit('loads mjs file', async () => {
+	const filepath = path.join(__dirname, 'load', 'test-app.mjs');
+	const result = await defaultLoaders['.mjs'](filepath, '');
+
+	assert.deepStrictEqual(result, {jsTest: true});
+});
+
+defaultLoaderSuit.run();
