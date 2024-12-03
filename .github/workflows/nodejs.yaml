@@ -16,7 +16,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
     - name: types
       run: npm run types
 
@@ -63,7 +63,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: install dependencies
+    - name: install dependencies --ignore-scripts
       run: npm ci
     - name: old node tests
       run: node src/spec/old-node-tests.uvu.js
@@ -80,7 +80,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
     - name: windows node tests
       run: node src/spec/old-node-tests.uvu.js
 
