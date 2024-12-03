@@ -1,3 +1,9 @@
+/**
+ * This file tests the package
+ * * Using older node versions that are not supported by Jest
+ * * No javascript transformation is done by the test runner
+ *   ESM is tested as is
+ */
 const uvu = require('uvu');
 const assert = require('assert');
 const path = require('path');
