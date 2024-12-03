@@ -57,7 +57,7 @@ const dynamicImport = async id => {
 	try {
 		const fileUrl = url.pathToFileURL(id).href;
 		const mod = await import(/* webpackIgnore: true */ fileUrl);
-		
+
 		return mod.default;
 	} catch (e) {
 		try {
