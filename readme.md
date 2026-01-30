@@ -46,6 +46,29 @@ lilconfigSync(
 
 ESM configs can be loaded with **async API only**. Specifically `js` files in projects with `"type": "module"` in `package.json` or `mjs` files.
 
+## TypeScript
+
+TypeScript config files (`.ts`, `.mts`, `.cts`) are supported.
+
+| Extension | Async | Sync |
+|-----------|-------|------|
+| `.ts`     | ✅    | ❌   |
+| `.mts`    | ✅    | ❌   |
+| `.cts`    | ✅    | ✅   |
+
+### How it works
+
+- **Node.js 22.18+**: Tries native TypeScript support via `--experimental-strip-types` (falls back to [jiti](https://github.com/unjs/jiti) if installed)
+- **Older Node.js**: Uses [jiti](https://github.com/unjs/jiti) if installed
+
+### Installation for older Node.js
+
+```sh
+npm install jiti
+```
+
+jiti is an optional peer dependency — you only need it if you're on Node.js < 22.18 and want TypeScript config support.
+
 ## Difference to `cosmiconfig`
 Lilconfig does not intend to be 100% compatible with `cosmiconfig` but tries to mimic it where possible. The key difference is **no** support for YAML files out of the box(`lilconfig` attempts to parse files with no extension as JSON instead of YAML). You can still add the support for YAML files by providing a loader, see an [example](#yaml-loader) below.
 

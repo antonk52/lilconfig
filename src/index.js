@@ -14,14 +14,23 @@ function getDefaultSearchPlaces(name, sync) {
 		`.${name}rc.js`,
 		`.${name}rc.cjs`,
 		...(sync ? [] : [`.${name}rc.mjs`]),
+		...(sync ? [] : [`.${name}rc.ts`]),
+		...(sync ? [] : [`.${name}rc.mts`]),
+		`.${name}rc.cts`,
 		`.config/${name}rc`,
 		`.config/${name}rc.json`,
 		`.config/${name}rc.js`,
 		`.config/${name}rc.cjs`,
 		...(sync ? [] : [`.config/${name}rc.mjs`]),
+		...(sync ? [] : [`.config/${name}rc.ts`]),
+		...(sync ? [] : [`.config/${name}rc.mts`]),
+		`.config/${name}rc.cts`,
 		`${name}.config.js`,
 		`${name}.config.cjs`,
 		...(sync ? [] : [`${name}.config.mjs`]),
+		...(sync ? [] : [`${name}.config.ts`]),
+		...(sync ? [] : [`${name}.config.mts`]),
+		`${name}.config.cts`,
 	];
 }
 
@@ -43,17 +52,89 @@ const jsonLoader = (_, content) => JSON.parse(content);
 // Use plain require in webpack context for dynamic import
 const requireFunc =
 	typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
-/** @type {import('./index').LoadersSync} */
+const TS_ERROR_CODES = new Set([
+	'ERR_UNKNOWN_FILE_EXTENSION',
+	'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX',
+]);
+const TS_ERROR_MESSAGES = [
+	'Unexpected token',
+	'Cannot use import statement outside a module',
+];
+
+/**
+ * Lazily load jiti for TypeScript support on older Node.js
+ * @type {() => ReturnType<typeof import('jiti').createJiti> | null}
+ */
+/** @type {ReturnType<typeof import('jiti').createJiti> | false | null} */
+let jitiInstance = null;
+const getJiti = () => {
+	if (jitiInstance !== null) return jitiInstance || null;
+	try {
+		const createJiti = require('jiti').createJiti;
+		jitiInstance = createJiti(__filename);
+		return jitiInstance;
+	} catch {
+		jitiInstance = false;
+		return null;
+	}
+};
+
+/**
+ * Create error for missing TypeScript support
+ * @type {(filepath: string, error?: unknown) => Error}
+ */
+const createTSError = (filepath, error) => {
+	const details =
+		error && typeof error === 'object' && 'message' in error
+			? `\nReason: ${String(error.message)}`
+			: '';
+	return new Error(
+		`Cannot load TypeScript config: ${filepath}${details}
+To use TypeScript config files, either:
+- run Node.js 22.18+ with --experimental-strip-types, or
+- install jiti (npm install jiti).`,
+	);
+};
+
+/**
+ * Detect errors that indicate missing/unsupported TypeScript support
+ * @type {(error: unknown) => boolean}
+ */
+const isTsUnsupportedError = error => {
+	if (!error || typeof error !== 'object') return false;
+	/** @type {{code?: unknown, message?: unknown, name?: unknown}} */
+	const err =
+		/** @type {{code?: unknown, message?: unknown, name?: unknown}} */ (error);
+	const code = typeof err.code === 'string' ? err.code : undefined;
+	if (code && TS_ERROR_CODES.has(code)) return true;
+	const message = typeof err.message === 'string' ? err.message : '';
+	if (TS_ERROR_MESSAGES.some(text => message.includes(text))) return true;
+	return err.name === 'SyntaxError';
+};
+
+/** @type {import('./index').LoaderSync} */
+const tsRequireSync = (id, _content) => {
+	try {
+		return requireFunc(id);
+	} catch (error) {
+		if (!isTsUnsupportedError(error)) throw error;
+		const jiti = getJiti();
+		if (jiti) return jiti(id);
+		throw createTSError(id, error);
+	}
+};
+
 const defaultLoadersSync = Object.freeze({
 	'.js': requireFunc,
 	'.json': requireFunc,
 	'.cjs': requireFunc,
+	'.cts': tsRequireSync,
 	noExt: jsonLoader,
 });
 module.exports.defaultLoadersSync = defaultLoadersSync;
 
 /** @type {import('./index').Loader} */
-const dynamicImport = async id => {
+const dynamicImport = async (id, _content) => {
 	try {
 		const fileUrl = url.pathToFileURL(id).href;
 		const mod = await import(/* webpackIgnore: true */ fileUrl);
@@ -77,11 +158,28 @@ const dynamicImport = async id => {
 	}
 };
 
+/** @type {import('./index').Loader} */
+const tsImport = async (id, content) => {
+	try {
+		return await dynamicImport(id, content);
+	} catch (error) {
+		if (!isTsUnsupportedError(error)) throw error;
+		const jiti = getJiti();
+		if (jiti) {
+			return await jiti.import(id, {default: true});
+		}
+		throw createTSError(id, error);
+	}
+};
+
 /** @type {import('./index').Loaders} */
 const defaultLoaders = Object.freeze({
 	'.js': dynamicImport,
 	'.mjs': dynamicImport,
 	'.cjs': dynamicImport,
+	'.ts': tsImport,
+	'.mts': tsImport,
+	'.cts': tsImport,
 	'.json': jsonLoader,
 	noExt: jsonLoader,
 });

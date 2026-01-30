@@ -1135,18 +1135,21 @@ describe('lilconfigSync', () => {
 				const result = lilconfigSync('non-existent', options).search();
 				expect(
 					// @ts-expect-error
-					fs.accessSync.mock.calls.slice(-10),
+					fs.accessSync.mock.calls.slice(-13),
 				).toEqual([
 					['/package.json'],
 					['/.non-existentrc.json'],
 					['/.non-existentrc.js'],
 					['/.non-existentrc.cjs'],
+					['/.non-existentrc.cts'],
 					['/.config/non-existentrc'],
 					['/.config/non-existentrc.json'],
 					['/.config/non-existentrc.js'],
 					['/.config/non-existentrc.cjs'],
+					['/.config/non-existentrc.cts'],
 					['/non-existent.config.js'],
 					['/non-existent.config.cjs'],
+					['/non-existent.config.cts'],
 				]);
 				const ccResult = cosmiconfigSync('non-existent', options).search();
 
@@ -1541,21 +1544,30 @@ describe('lilconfig', () => {
 				const result = await lilconfig('non-existent', options).search();
 				expect(
 					// @ts-expect-error
-					fs.promises.access.mock.calls.slice(-13),
+					fs.promises.access.mock.calls.slice(-22),
 				).toEqual([
 					['/package.json'],
 					['/.non-existentrc.json'],
 					['/.non-existentrc.js'],
 					['/.non-existentrc.cjs'],
 					['/.non-existentrc.mjs'],
+					['/.non-existentrc.ts'],
+					['/.non-existentrc.mts'],
+					['/.non-existentrc.cts'],
 					['/.config/non-existentrc'],
 					['/.config/non-existentrc.json'],
 					['/.config/non-existentrc.js'],
 					['/.config/non-existentrc.cjs'],
 					['/.config/non-existentrc.mjs'],
+					['/.config/non-existentrc.ts'],
+					['/.config/non-existentrc.mts'],
+					['/.config/non-existentrc.cts'],
 					['/non-existent.config.js'],
 					['/non-existent.config.cjs'],
 					['/non-existent.config.mjs'],
+					['/non-existent.config.ts'],
+					['/non-existent.config.mts'],
+					['/non-existent.config.cts'],
 				]);
 				const ccResult = await cosmiconfig('non-existent', options).search();
 
@@ -1833,6 +1845,171 @@ describe('lilconfig', () => {
 					options,
 				);
 			}).toThrowError(errMsg);
+		});
+	});
+});
+
+describe('TypeScript configs', () => {
+	const stopDir = __dirname;
+
+	describe('ts-project', () => {
+		it('async load .ts file', async () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.ts');
+			const result = await lilconfig('ts', {}).load(filepath);
+			expect(result.config).toEqual({typescript: true});
+		});
+
+		it('async load .mts file', async () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.mts');
+			const result = await lilconfig('ts', {}).load(filepath);
+			expect(result.config).toEqual({mts: true});
+		});
+
+		it('async load .cts file', async () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.cts');
+			const result = await lilconfig('ts', {}).load(filepath);
+			expect(result.config).toEqual({cts: true});
+		});
+
+		it('async load .ts file with enum (jiti fallback)', async () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.enum.ts');
+			const result = await lilconfig('ts', {}).load(filepath);
+			expect(result.config).toEqual({enumValue: 'enum'});
+		});
+
+		it('sync load .cts file', () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.cts');
+			const result = lilconfigSync('ts', {}).load(filepath);
+			expect(result.config).toEqual({cts: true});
+		});
+
+		it('sync load .cts file with enum (jiti fallback)', () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.enum.cts');
+			const result = lilconfigSync('ts', {}).load(filepath);
+			expect(result.config).toEqual({enumValue: 'enum'});
+		});
+
+		it('async search finds .cts config', async () => {
+			const searchFrom = path.join(stopDir, 'ts-project', 'a', 'b', 'c');
+			const result = await lilconfig('ts', {
+				searchPlaces: ['ts.config.cts'],
+				stopDir,
+			}).search(searchFrom);
+			expect(result.config).toEqual({cts: true});
+		});
+
+		it('async search finds .ts config', async () => {
+			const searchFrom = path.join(stopDir, 'ts-project', 'a', 'b', 'c');
+			const result = await lilconfig('ts', {
+				searchPlaces: ['ts.config.ts'],
+				stopDir,
+			}).search(searchFrom);
+			expect(result.config).toEqual({typescript: true});
+		});
+
+		it('async search finds .mts config', async () => {
+			const searchFrom = path.join(stopDir, 'ts-project', 'a', 'b', 'c');
+			const result = await lilconfig('ts', {
+				searchPlaces: ['ts.config.mts'],
+				stopDir,
+			}).search(searchFrom);
+			expect(result.config).toEqual({mts: true});
+		});
+
+		it('sync search finds .cts config', () => {
+			const searchFrom = path.join(stopDir, 'ts-project', 'a', 'b', 'c');
+			const result = lilconfigSync('ts', {
+				searchPlaces: ['ts.config.cts'],
+				stopDir,
+			}).search(searchFrom);
+			expect(result.config).toEqual({cts: true});
+		});
+
+		it('rethrows non-object errors from ts files', async () => {
+			const filepath = path.join(
+				stopDir,
+				'ts-project',
+				'ts.config.throw-string.ts',
+			);
+			const err = await lilconfig('ts', {})
+				.load(filepath)
+				.catch(e => e);
+			expect(err).toBe('boom');
+		});
+	});
+
+	describe('error handling without TS support', () => {
+		/** @type {import('../index').LoaderSync} */
+		const mockTsLoader = () => {
+			throw new Error('Mock: No TypeScript support');
+		};
+
+		it('throws helpful error when loading .ts without support', async () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.ts');
+			const result = await lilconfig('ts', {
+				loaders: {'.ts': mockTsLoader},
+			})
+				.load(filepath)
+				.catch(e => e);
+			expect(result.message).toContain('Mock: No TypeScript support');
+		});
+
+		it('throws helpful error when loading .cts sync without support', () => {
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.cts');
+			expect(() => {
+				lilconfigSync('ts', {
+					loaders: {'.cts': mockTsLoader},
+				}).load(filepath);
+			}).toThrow('Mock: No TypeScript support');
+		});
+
+		it('throws helpful error when jiti is missing (async)', async () => {
+			jest.resetModules();
+			jest.doMock('jiti', () => {
+				const err = new Error('Cannot find module jiti');
+				// @ts-expect-error: test helper for simulating missing dep
+				err.code = 'MODULE_NOT_FOUND';
+				throw err;
+			});
+
+			const {lilconfig: freshLilconfig} = require('..');
+			const filepath = path.join(
+				stopDir,
+				'ts-project',
+				'ts.config.throw-code.ts',
+			);
+			const err = await freshLilconfig('ts', {})
+				.load(filepath)
+				.catch(e => e);
+			expect(err.message).toContain('Cannot load TypeScript config');
+			expect(err.message).toContain('install jiti');
+
+			jest.dontMock('jiti');
+			jest.resetModules();
+		});
+
+		it('throws helpful error when jiti is missing (sync)', () => {
+			jest.resetModules();
+			jest.doMock('jiti', () => {
+				const err = new Error('Cannot find module jiti');
+				// @ts-expect-error: test helper for simulating missing dep
+				err.code = 'MODULE_NOT_FOUND';
+				throw err;
+			});
+
+			const {lilconfigSync: freshLilconfigSync} = require('..');
+			const filepath = path.join(stopDir, 'ts-project', 'ts.config.enum.cts');
+			let err;
+			try {
+				freshLilconfigSync('ts', {}).load(filepath);
+			} catch (e) {
+				err = e;
+			}
+			expect(err.message).toContain('Cannot load TypeScript config');
+			expect(err.message).toContain('install jiti');
+
+			jest.dontMock('jiti');
+			jest.resetModules();
 		});
 	});
 });
