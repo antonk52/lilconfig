@@ -39,7 +39,7 @@ function parentDir(p) {
 }
 
 /** @type {import('./index').LoaderSync} */
-const jsonLoader = (_, content) => JSON.parse(content);
+const jsonLoader = (_, content) => JSON.parse(content.replace(/^\uFEFF/, ''));
 // Use plain require in webpack context for dynamic import
 const requireFunc =
 	typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
