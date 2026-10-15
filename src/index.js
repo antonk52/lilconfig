@@ -6,23 +6,53 @@ const url = require('url');
 
 const fsReadFileAsync = fs.promises.readFile;
 
+/**
+ * `process.features.typescript` is truthy when the runtime can load
+ * TypeScript files natively (nodejs 22.6+ with `--experimental-strip-types`,
+ * enabled by default since nodejs 22.18), see #61.
+ * The loading itself is left up to the runtime: syntax it cannot handle
+ * (e.g. enums with type stripping) produces the same error a user would
+ * get running the file with node directly.
+ */
+const supportsTypeScript = Boolean(
+	/** @type {{typescript?: boolean | string}} */ (process.features).typescript,
+);
+
+// TypeScript files are only searched for on runtimes that can load them
+const tsExtensions = /\.[mc]?ts$/;
+// ESM files can only be loaded with the async api
+const esmExtensions = /\.m[jt]s$/;
+
 /** @type {(name: string, sync: boolean) => string[]} */
 function getDefaultSearchPlaces(name, sync) {
 	return [
 		'package.json',
 		`.${name}rc.json`,
 		`.${name}rc.js`,
+		`.${name}rc.ts`,
 		`.${name}rc.cjs`,
-		...(sync ? [] : [`.${name}rc.mjs`]),
+		`.${name}rc.cts`,
+		`.${name}rc.mjs`,
+		`.${name}rc.mts`,
 		`.config/${name}rc`,
 		`.config/${name}rc.json`,
 		`.config/${name}rc.js`,
+		`.config/${name}rc.ts`,
 		`.config/${name}rc.cjs`,
-		...(sync ? [] : [`.config/${name}rc.mjs`]),
+		`.config/${name}rc.cts`,
+		`.config/${name}rc.mjs`,
+		`.config/${name}rc.mts`,
 		`${name}.config.js`,
+		`${name}.config.ts`,
 		`${name}.config.cjs`,
-		...(sync ? [] : [`${name}.config.mjs`]),
-	];
+		`${name}.config.cts`,
+		`${name}.config.mjs`,
+		`${name}.config.mts`,
+	].filter(
+		place =>
+			(supportsTypeScript || !tsExtensions.test(place)) &&
+			(!sync || !esmExtensions.test(place)),
+	);
 }
 
 /**
@@ -48,6 +78,7 @@ const defaultLoadersSync = Object.freeze({
 	'.js': requireFunc,
 	'.json': requireFunc,
 	'.cjs': requireFunc,
+	...(supportsTypeScript ? {'.ts': requireFunc, '.cts': requireFunc} : null),
 	noExt: jsonLoader,
 });
 module.exports.defaultLoadersSync = defaultLoadersSync;
@@ -82,6 +113,9 @@ const defaultLoaders = Object.freeze({
 	'.js': dynamicImport,
 	'.mjs': dynamicImport,
 	'.cjs': dynamicImport,
+	...(supportsTypeScript
+		? {'.ts': dynamicImport, '.mts': dynamicImport, '.cts': dynamicImport}
+		: null),
 	'.json': jsonLoader,
 	noExt: jsonLoader,
 });

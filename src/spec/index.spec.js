@@ -1,6 +1,7 @@
 // @ts-check
 const path = require('path');
 const fs = require('fs');
+const childProcess = require('child_process');
 const {lilconfig, lilconfigSync} = require('..');
 const {cosmiconfig, cosmiconfigSync} = require('cosmiconfig');
 const {transpileModule} = require('typescript');
@@ -28,6 +29,7 @@ beforeEach(() => {
 });
 
 const isNodeV20orNewer = parseInt(process.versions.node, 10) >= 20;
+const supportsTypeScript = Boolean(process.features?.typescript);
 
 describe('options', () => {
 	const dirname = path.join(__dirname, 'load');
@@ -313,6 +315,133 @@ describe('options', () => {
 			});
 		});
 	});
+
+	(supportsTypeScript ? describe : describe.skip)(
+		'ts-project (native TypeScript, default loaders)',
+		() => {
+			const stopDir = path.join(__dirname, 'ts-project');
+			const lilconfigDir = path.join(__dirname, '..');
+
+			/**
+			 * jest replaces `require`/`import()` with its own module loader,
+			 * so native TypeScript loading has to run in a plain node child process
+			 * @type {(expression: string) => unknown}
+			 */
+			const runNative = expression => {
+				const script = `
+					const {lilconfig, lilconfigSync} = require(${JSON.stringify(
+						lilconfigDir,
+					)});
+					Promise.resolve(${expression}).then(result => {
+						console.log(JSON.stringify(result));
+					});
+				`;
+				const stdout = childProcess.execFileSync(
+					process.execPath,
+					['-e', script],
+					{encoding: 'utf8'},
+				);
+				return JSON.parse(stdout);
+			};
+
+			it('async search', () => {
+				const filepath = path.join(stopDir, 'ts.config.ts');
+
+				const result = runNative(
+					`lilconfig('ts', {stopDir: ${JSON.stringify(
+						stopDir,
+					)}}).search(${JSON.stringify(stopDir)})`,
+				);
+
+				expect(result).toEqual({config: {typescript: true}, filepath});
+			});
+
+			it('sync search', () => {
+				const filepath = path.join(stopDir, 'ts.config.ts');
+
+				const result = runNative(
+					`lilconfigSync('ts', {stopDir: ${JSON.stringify(
+						stopDir,
+					)}}).search(${JSON.stringify(stopDir)})`,
+				);
+
+				expect(result).toEqual({config: {typescript: true}, filepath});
+			});
+
+			it('async load cts', () => {
+				const filepath = path.join(stopDir, 'ts.config.cts');
+
+				const result = runNative(
+					`lilconfig('ts').load(${JSON.stringify(filepath)})`,
+				);
+
+				expect(result).toEqual({config: {cts: true}, filepath});
+			});
+
+			it('async load mts', () => {
+				const filepath = path.join(stopDir, 'ts.config.mts');
+
+				const result = runNative(
+					`lilconfig('ts').load(${JSON.stringify(filepath)})`,
+				);
+
+				expect(result).toEqual({config: {mts: true}, filepath});
+			});
+
+			it('sync load cts', () => {
+				const filepath = path.join(stopDir, 'ts.config.cts');
+
+				const result = runNative(
+					`lilconfigSync('ts').load(${JSON.stringify(filepath)})`,
+				);
+
+				expect(result).toEqual({config: {cts: true}, filepath});
+			});
+
+			describe('without native TypeScript support', () => {
+				/** @type {PropertyDescriptor} */
+				let descriptor;
+
+				beforeEach(() => {
+					descriptor = /** @type {PropertyDescriptor} */ (
+						Object.getOwnPropertyDescriptor(process.features, 'typescript')
+					);
+					Object.defineProperty(process.features, 'typescript', {
+						value: false,
+						configurable: true,
+					});
+				});
+
+				afterEach(() => {
+					Object.defineProperty(process.features, 'typescript', descriptor);
+				});
+
+				it('default loaders and search places have no TypeScript entries', () => {
+					jest.isolateModules(() => {
+						const fresh = require('..');
+
+						expect(Object.keys(fresh.defaultLoadersSync)).toEqual([
+							'.js',
+							'.json',
+							'.cjs',
+							'noExt',
+						]);
+						expect(Object.keys(fresh.defaultLoaders)).toEqual([
+							'.js',
+							'.mjs',
+							'.cjs',
+							'.json',
+							'noExt',
+						]);
+
+						const result = fresh.lilconfigSync('ts', {stopDir}).search(stopDir);
+
+						expect(result).toEqual(null);
+					});
+				});
+			});
+		},
+	);
 
 	describe('transform', () => {
 		/** @type {import('../index').TransformSync} */
@@ -1133,21 +1262,29 @@ describe('lilconfigSync', () => {
 			it('default for searchFrom till root directory', () => {
 				const options = {stopDir: '/'};
 				const result = lilconfigSync('non-existent', options).search();
-				expect(
-					// @ts-expect-error
-					fs.accessSync.mock.calls.slice(-10),
-				).toEqual([
+				const ts = supportsTypeScript;
+				const expectedPlaces = [
 					['/package.json'],
 					['/.non-existentrc.json'],
 					['/.non-existentrc.js'],
+					...(ts ? [['/.non-existentrc.ts']] : []),
 					['/.non-existentrc.cjs'],
+					...(ts ? [['/.non-existentrc.cts']] : []),
 					['/.config/non-existentrc'],
 					['/.config/non-existentrc.json'],
 					['/.config/non-existentrc.js'],
+					...(ts ? [['/.config/non-existentrc.ts']] : []),
 					['/.config/non-existentrc.cjs'],
+					...(ts ? [['/.config/non-existentrc.cts']] : []),
 					['/non-existent.config.js'],
+					...(ts ? [['/non-existent.config.ts']] : []),
 					['/non-existent.config.cjs'],
-				]);
+					...(ts ? [['/non-existent.config.cts']] : []),
+				];
+				expect(
+					// @ts-expect-error
+					fs.accessSync.mock.calls.slice(-expectedPlaces.length),
+				).toEqual(expectedPlaces);
 				const ccResult = cosmiconfigSync('non-existent', options).search();
 
 				const expected = null;
@@ -1539,24 +1676,35 @@ describe('lilconfig', () => {
 			it('searches root directory correctly', async () => {
 				const options = {stopDir: '/'};
 				const result = await lilconfig('non-existent', options).search();
-				expect(
-					// @ts-expect-error
-					fs.promises.access.mock.calls.slice(-13),
-				).toEqual([
+				const ts = supportsTypeScript;
+				const expectedPlaces = [
 					['/package.json'],
 					['/.non-existentrc.json'],
 					['/.non-existentrc.js'],
+					...(ts ? [['/.non-existentrc.ts']] : []),
 					['/.non-existentrc.cjs'],
+					...(ts ? [['/.non-existentrc.cts']] : []),
 					['/.non-existentrc.mjs'],
+					...(ts ? [['/.non-existentrc.mts']] : []),
 					['/.config/non-existentrc'],
 					['/.config/non-existentrc.json'],
 					['/.config/non-existentrc.js'],
+					...(ts ? [['/.config/non-existentrc.ts']] : []),
 					['/.config/non-existentrc.cjs'],
+					...(ts ? [['/.config/non-existentrc.cts']] : []),
 					['/.config/non-existentrc.mjs'],
+					...(ts ? [['/.config/non-existentrc.mts']] : []),
 					['/non-existent.config.js'],
+					...(ts ? [['/non-existent.config.ts']] : []),
 					['/non-existent.config.cjs'],
+					...(ts ? [['/non-existent.config.cts']] : []),
 					['/non-existent.config.mjs'],
-				]);
+					...(ts ? [['/non-existent.config.mts']] : []),
+				];
+				expect(
+					// @ts-expect-error
+					fs.promises.access.mock.calls.slice(-expectedPlaces.length),
+				).toEqual(expectedPlaces);
 				const ccResult = await cosmiconfig('non-existent', options).search();
 
 				const expected = null;
