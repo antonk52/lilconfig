@@ -7,6 +7,8 @@
 const uvu = require('uvu');
 const assert = require('assert');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const {lilconfig, lilconfigSync, defaultLoaders} = require('..');
 const {cosmiconfig, cosmiconfigSync} = require('cosmiconfig');
 const {transpileModule} = require('typescript');
@@ -211,3 +213,58 @@ defaultLoaderSuit('loads mjs file', async () => {
 });
 
 defaultLoaderSuit.run();
+
+for (const [name, createExplorer] of [
+	['async', lilconfig],
+	['sync', lilconfigSync],
+]) {
+	const bomSuite = uvu.suite(`utf8-bom-${name}`);
+	let dirname;
+	const config = {message: '\uFEFFvalue'};
+
+	bomSuite.before.each(() => {
+		dirname = fs.mkdtempSync(path.join(os.tmpdir(), 'lilconfig-bom-'));
+	});
+
+	bomSuite.after.each(() => {
+		for (const filename of fs.readdirSync(dirname)) {
+			fs.unlinkSync(path.join(dirname, filename));
+		}
+		fs.rmdirSync(dirname);
+	});
+
+	for (const [filename, contents] of [
+		['package.json', {'test-app': config}],
+		['.test-apprc.json', config],
+		['.test-apprc', config],
+	]) {
+		for (const method of ['load', 'search']) {
+			bomSuite(`${method} ${filename} with a leading BOM`, async () => {
+				const filepath = path.join(dirname, filename);
+				fs.writeFileSync(filepath, `\uFEFF${JSON.stringify(contents)}`);
+				const explorer = createExplorer('test-app', {
+					searchPlaces: [filename],
+					stopDir: dirname,
+				});
+
+				const result = await explorer[method](
+					method === 'load' ? filepath : dirname,
+				);
+
+				assert.deepStrictEqual(result, {config, filepath});
+			});
+		}
+	}
+
+	bomSuite('ignores package.json without the requested property', async () => {
+		fs.writeFileSync(
+			path.join(dirname, 'package.json'),
+			'\uFEFF{"name":"test-app"}',
+		);
+		const explorer = createExplorer('test-app', {stopDir: dirname});
+
+		assert.strictEqual(await explorer.search(dirname), null);
+	});
+
+	bomSuite.run();
+}
