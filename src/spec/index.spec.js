@@ -1107,6 +1107,52 @@ describe('lilconfigSync', () => {
 	describe('search', () => {
 		const dirname = path.join(__dirname, 'search');
 
+		it('resolves a relative searchFrom against the cwd', () => {
+			const cwd = process.cwd();
+			process.chdir(dirname);
+			try {
+				const options = {
+					searchPlaces: ['test-app.config.js'],
+					stopDir: dirname,
+				};
+				const expected = {
+					config: {stopped: true},
+					filepath: path.join(dirname, 'test-app.config.js'),
+				};
+
+				for (const searchFrom of ['.', path.join('a', 'b')]) {
+					const result = lilconfigSync('test-app', options).search(searchFrom);
+					const ccResult = cosmiconfigSync('test-app', options).search(
+						searchFrom,
+					);
+
+					expect(result).toEqual(expected);
+					expect(ccResult).toEqual(expected);
+				}
+			} finally {
+				process.chdir(cwd);
+			}
+		});
+
+		it('stops at a relative stopDir with a trailing slash', () => {
+			const cwd = process.cwd();
+			process.chdir(dirname);
+			try {
+				const options = {
+					searchPlaces: ['test-app.config.js'],
+					stopDir: 'a/',
+				};
+
+				const result = lilconfigSync('test-app', options).search(
+					path.join(dirname, 'a', 'b'),
+				);
+
+				expect(result).toEqual(null);
+			} finally {
+				process.chdir(cwd);
+			}
+		});
+
 		it('default for searchFrom', () => {
 			const result = lilconfigSync('non-existent').search();
 			const ccResult = cosmiconfigSync('non-existent').search();
@@ -1512,6 +1558,54 @@ describe('lilconfig', () => {
 
 	describe('search', () => {
 		const dirname = path.join(__dirname, 'search');
+
+		it('resolves a relative searchFrom against the cwd', async () => {
+			const cwd = process.cwd();
+			process.chdir(dirname);
+			try {
+				const options = {
+					searchPlaces: ['test-app.config.js'],
+					stopDir: dirname,
+				};
+				const expected = {
+					config: {stopped: true},
+					filepath: path.join(dirname, 'test-app.config.js'),
+				};
+
+				for (const searchFrom of ['.', path.join('a', 'b')]) {
+					const result = await lilconfig('test-app', options).search(
+						searchFrom,
+					);
+					const ccResult = await cosmiconfig('test-app', options).search(
+						searchFrom,
+					);
+
+					expect(result).toEqual(expected);
+					expect(ccResult).toEqual(expected);
+				}
+			} finally {
+				process.chdir(cwd);
+			}
+		});
+
+		it('stops at a relative stopDir with a trailing slash', async () => {
+			const cwd = process.cwd();
+			process.chdir(dirname);
+			try {
+				const options = {
+					searchPlaces: ['test-app.config.js'],
+					stopDir: 'a/',
+				};
+
+				const result = await lilconfig('test-app', options).search(
+					path.join(dirname, 'a', 'b'),
+				);
+
+				expect(result).toEqual(null);
+			} finally {
+				process.chdir(cwd);
+			}
+		});
 
 		it('returns null when no config found', async () => {
 			const result = await lilconfig('non-existent').search();
