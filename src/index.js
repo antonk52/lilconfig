@@ -108,7 +108,6 @@ function getOptions(name, options, sync) {
 			...options.loaders,
 		},
 	};
-	// `search()` compares `stopDir` with absolute directories
 	conf.stopDir = path.resolve(conf.stopDir);
 
 	conf.searchPlaces.forEach(place => {
