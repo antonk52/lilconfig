@@ -108,6 +108,9 @@ function getOptions(name, options, sync) {
 			...options.loaders,
 		},
 	};
+	// `search()` compares `stopDir` with absolute directories
+	conf.stopDir = path.resolve(conf.stopDir);
+
 	conf.searchPlaces.forEach(place => {
 		const key = path.extname(place) || 'noExt';
 		const loader = conf.loaders[key];
@@ -178,7 +181,7 @@ module.exports.lilconfig = function lilconfig(name, options) {
 
 			/** @type {Set<string>} */
 			const visited = new Set();
-			let dir = searchFrom;
+			let dir = path.resolve(searchFrom);
 			dirLoop: while (true) {
 				if (cache) {
 					const r = searchCache.get(dir);
@@ -333,7 +336,7 @@ module.exports.lilconfigSync = function lilconfigSync(name, options) {
 
 			/** @type {Set<string>} */
 			const visited = new Set();
-			let dir = searchFrom;
+			let dir = path.resolve(searchFrom);
 			dirLoop: while (true) {
 				if (cache) {
 					const r = searchCache.get(dir);
