@@ -46,6 +46,12 @@ lilconfigSync(
 
 ESM configs can be loaded with **async API only**. Specifically `js` files in projects with `"type": "module"` in `package.json` or `mjs` files.
 
+## TypeScript
+
+If the runtime can load TypeScript files natively (`process.features.typescript` is truthy: nodejs 22.6+ with `--experimental-strip-types`, enabled by default since nodejs 22.18), lilconfig also searches for `ts`, `cts` and `mts` config files (`mts` with the **async API only**, same as `mjs`). The files are loaded by the runtime itself, so its limitations apply as if you ran the file with node directly, e.g. type stripping does not support enums.
+
+On runtimes without native TypeScript support the defaults are unchanged, but you can opt in by providing custom `searchPlaces` and a loader for the `.ts` extension.
+
 ## Difference to `cosmiconfig`
 Lilconfig does not intend to be 100% compatible with `cosmiconfig` but tries to mimic it where possible. The key difference is **no** support for YAML files out of the box(`lilconfig` attempts to parse files with no extension as JSON instead of YAML). You can still add the support for YAML files by providing a loader, see an [example](#yaml-loader) below.
 
