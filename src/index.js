@@ -134,7 +134,7 @@ function getPackageProp(props, obj) {
 		(Array.isArray(props) ? props : props.split('.')).reduce(
 			(acc, prop) => (acc === undefined ? acc : acc[prop]),
 			obj,
-		) || null
+		) ?? null
 	);
 }
 
